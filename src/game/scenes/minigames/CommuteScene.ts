@@ -163,8 +163,8 @@ export class CommuteScene extends Phaser.Scene {
     leftBg.on('pointerdown', () => {
       if (this.gameOver || this.isFalling) return;
       // 방향전환 = 반대 레인으로 한 칸 올라가기
-      this.facingDir = this.currentLane === 'left' ? 'right' : 'left';
-      this.tryStep();
+      const oppositeLane = this.currentLane === 'left' ? 'right' : 'left';
+      this.tryStepToLane(oppositeLane);
 
       this.tweens.add({
         targets: leftBg, scaleX: 0.95, scaleY: 0.95,
@@ -184,7 +184,8 @@ export class CommuteScene extends Phaser.Scene {
 
     rightBg.on('pointerdown', () => {
       if (this.gameOver || this.isFalling) return;
-      this.tryStep();
+      // 올라가기 = 같은 레인으로 한 칸 올라가기
+      this.tryStepToLane(this.currentLane);
       this.tweens.add({
         targets: rightBg, scaleX: 0.95, scaleY: 0.95,
         duration: 50, yoyo: true,
@@ -193,13 +194,7 @@ export class CommuteScene extends Phaser.Scene {
   }
 
   private updateDirArrow() {
-    let arrow: string;
-    if (this.facingDir === 'up') {
-      arrow = '⬆';
-    } else {
-      arrow = this.facingDir === 'right' ? '➡' : '⬅';
-    }
-    this.dirArrow.setText(arrow);
+    this.dirArrow.setText('⬆');
     this.dirArrow.setPosition(this.player.x, this.player.y - 50);
 
     this.tweens.add({
@@ -314,14 +309,10 @@ export class CommuteScene extends Phaser.Scene {
      Step logic
      ══════════════════════════════════════ */
 
-  private tryStep() {
+  private tryStepToLane(targetLane: 'left' | 'right') {
     const nextIdx = this.currentPlatIdx + 1;
     const nextPlat = this.platforms[nextIdx];
     if (!nextPlat) return;
-
-    // 올라가기 시 이동할 레인 결정
-    const targetLane: 'left' | 'right' =
-      this.facingDir === 'up' ? this.currentLane : this.facingDir;
 
     if (targetLane === nextPlat.lane) {
       // 성공!
@@ -332,8 +323,6 @@ export class CommuteScene extends Phaser.Scene {
       if (this.comboCount > this.bestCombo) this.bestCombo = this.comboCount;
       this.scoreText.setText(`${this.score} 계단`);
 
-      // 이동 후 방향 리셋 → 위
-      this.facingDir = 'up';
       this.playerSprite.setFlipX(false);
 
       // Step animation
@@ -359,7 +348,7 @@ export class CommuteScene extends Phaser.Scene {
 
       this.cleanupOldPlatforms();
     } else {
-      this.onFall();
+      this.onFall(targetLane);
     }
   }
 
@@ -399,16 +388,13 @@ export class CommuteScene extends Phaser.Scene {
      Fall
      ══════════════════════════════════════ */
 
-  private onFall() {
+  private onFall(attemptedLane: 'left' | 'right') {
     this.isFalling = true;
     this.comboCount = 0;
     this.setPlayerTexture('player-fall');
     this.cameras.main.shake(200, 0.01);
 
-    // 이동하려던 레인으로 떨어지는 연출
-    const targetLane: 'left' | 'right' =
-      this.facingDir === 'up' ? this.currentLane : this.facingDir;
-    const wrongX = this.laneX[targetLane];
+    const wrongX = this.laneX[attemptedLane];
 
     this.tweens.add({
       targets: this.player,
@@ -423,14 +409,10 @@ export class CommuteScene extends Phaser.Scene {
         if (this.timeLeft <= 0) { this.endGame(); return; }
 
         this.time.delayedCall(300, () => {
-          // 방향 리셋
-          this.facingDir = 'up';
           this.playerSprite.setFlipX(false);
-
           this.setPlayerTexture('player-idle');
           this.player.setAlpha(1);
 
-          // Return to current platform
           const plat = this.platforms[this.currentPlatIdx];
           this.scrollToPlayer(plat);
 
