@@ -116,28 +116,25 @@ export class LunchScene extends Phaser.Scene {
     this.catchStartTime = 0;
   }
 
+  preload() {
+    if (!this.textures.exists('basket-cooky')) {
+      this.load.image('basket-cooky', 'basket-cooky.png');
+    }
+  }
+
   create() {
     const { width, height } = this.scale;
     const stage = GameManager.getCurrentStage();
     this.cameras.main.setBackgroundColor(stage.bgColor);
 
-    // Generate basket texture if not cached
-    if (!this.textures.exists('lunch-basket')) {
-      const gfx = this.add.graphics();
-      gfx.setVisible(false);
-      gfx.fillStyle(0x8b5e3c);
-      gfx.fillRoundedRect(0, 8, 100, 40, 6);
-      gfx.fillStyle(0xa0522d);
-      gfx.fillRoundedRect(5, 0, 90, 12, 4);
-      gfx.generateTexture('lunch-basket', 100, 48);
-      gfx.destroy();
-    }
-
-    // Basket (hidden during Phase 1)
-    this.basket = this.add.image(width / 2, height - 70, 'lunch-basket');
+    // Basket (hidden during Phase 1) — Cooky character image
+    const basketW = 100;
+    const basketH = 120;
+    this.basket = this.add.image(width / 2, height - 70, 'basket-cooky');
+    this.basket.setDisplaySize(basketW, basketH);
     this.basket.setVisible(false);
     this.basketBounds = new Phaser.Geom.Rectangle(
-      this.basket.x - 50, this.basket.y - 24, 100, 48,
+      this.basket.x - basketW / 2, this.basket.y - basketH / 2, basketW, basketH,
     );
 
     // HUD — Score
@@ -160,6 +157,7 @@ export class LunchScene extends Phaser.Scene {
       const halfW = 50;
       this.basket.x = Phaser.Math.Clamp(pointer.x + this.dragOffsetX, halfW, width - halfW);
       this.basketBounds.x = this.basket.x - halfW;
+      this.basketBounds.y = this.basket.y - 60;
     });
 
     // Timer countdown
