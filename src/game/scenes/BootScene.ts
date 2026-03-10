@@ -7,6 +7,20 @@ export class BootScene extends Phaser.Scene {
     super({ key: 'BootScene' });
   }
 
+  preload() {
+    // 타일 이미지 미리 로드
+    this.load.image('tile-straight', 'tiles/straight.png');
+    this.load.image('tile-corner-tl', 'tiles/corner-tl.png');
+    this.load.image('tile-corner-tr', 'tiles/corner-tr.png');
+    this.load.image('tile-corner-bl', 'tiles/corner-bl.png');
+    this.load.image('tile-corner-br', 'tiles/corner-br.png');
+    this.load.image('building1', 'tiles/building1.png');
+    this.load.image('building2', 'tiles/building2.png');
+    this.load.image('rabbit', 'tiles/rabbit.png');
+    this.load.image('btn-forward', 'tiles/btn-forward.png');
+    this.load.image('btn-switch', 'tiles/btn-switch.png');
+  }
+
   create() {
     GameManager.reset();
     const { width, height } = this.scale;
