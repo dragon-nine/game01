@@ -1,6 +1,4 @@
 import Phaser from 'phaser';
-import { GameManager } from '../GameManager';
-import { emitGameState } from '../GameBridge';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -8,21 +6,24 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // 타일 이미지 미리 로드
-    this.load.image('tile-straight', 'tiles/straight.png');
-    this.load.image('tile-corner-tl', 'tiles/corner-tl.png');
-    this.load.image('tile-corner-tr', 'tiles/corner-tr.png');
-    this.load.image('tile-corner-bl', 'tiles/corner-bl.png');
-    this.load.image('tile-corner-br', 'tiles/corner-br.png');
-    this.load.image('building1', 'tiles/building1.png');
-    this.load.image('building2', 'tiles/building2.png');
-    this.load.image('rabbit', 'tiles/rabbit.png');
-    this.load.image('btn-forward', 'tiles/btn-forward.png');
-    this.load.image('btn-switch', 'tiles/btn-switch.png');
+    const assets: [string, string][] = [
+      ['tile-straight', 'map/straight.png'],
+      ['tile-corner-tl', 'map/corner-tl.png'],
+      ['tile-corner-tr', 'map/corner-tr.png'],
+      ['tile-corner-bl', 'map/corner-bl.png'],
+      ['tile-corner-br', 'map/corner-br.png'],
+      ['building1', 'obstacles/building1.png'],
+      ['building2', 'obstacles/building2.png'],
+      ['rabbit', 'character/rabbit.png'],
+      ['btn-forward', 'ui/btn-forward.png'],
+      ['btn-switch', 'ui/btn-switch.png'],
+    ];
+    for (const [key, path] of assets) {
+      if (!this.textures.exists(key)) this.load.image(key, path);
+    }
   }
 
   create() {
-    GameManager.reset();
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#0a0a14');
 
@@ -83,15 +84,7 @@ export class BootScene extends Phaser.Scene {
     btn.on('pointerdown', () => {
       this.cameras.main.fadeOut(500, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
-        const stage = GameManager.getCurrentStage();
-        this.scene.start('MinigameIntroScene', {
-          stageId: stage.id,
-          stageName: stage.name,
-          stageEmoji: stage.emoji,
-          minigameName: stage.minigame.name,
-          minigameDesc: stage.minigame.description,
-          minigameSceneKey: stage.minigame.sceneKey,
-        });
+        this.scene.start('CommuteScene');
       });
     });
 
@@ -99,35 +92,5 @@ export class BootScene extends Phaser.Scene {
     this.add.text(width / 2, height * 0.92, 'DragonNine Studio', {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#333344',
     }).setOrigin(0.5);
-
-    // ── Debug: 스테이지 바로가기 버튼 ──
-    {
-      const stages = GameManager.getAllStages();
-      const debugY = height * 0.84;
-      const totalW = stages.length * 56;
-      const startX = width / 2 - totalW / 2 + 28;
-
-      for (let i = 0; i < stages.length; i++) {
-        const s = stages[i];
-        const bx = startX + i * 56;
-        const dbg = this.add.text(bx, debugY, s.emoji, {
-          fontSize: '28px', backgroundColor: '#222244', padding: { x: 6, y: 4 },
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setAlpha(0.7);
-
-        this.add.text(bx, debugY + 22, s.category, {
-          fontFamily: 'sans-serif', fontSize: '10px', color: '#8888aa',
-        }).setOrigin(0.5);
-
-        dbg.on('pointerover', () => dbg.setAlpha(1));
-        dbg.on('pointerout', () => dbg.setAlpha(0.7));
-        dbg.on('pointerdown', () => {
-          GameManager.debugJumpTo(i);
-          const stage = GameManager.getCurrentStage();
-          this.scene.start(stage.minigame.sceneKey, { stageId: stage.id, debug: true });
-        });
-      }
-    }
-
-    emitGameState({ scene: 'BootScene', progress: 0, allCleared: false, stress: 0 });
   }
 }

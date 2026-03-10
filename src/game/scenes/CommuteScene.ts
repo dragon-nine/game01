@@ -1,9 +1,7 @@
 import Phaser from 'phaser';
-import { GameManager } from '../../GameManager';
-import { emitGameState } from '../../GameBridge';
 
 /* ══════════════════════════════════════
-   STAGE 1: 천국의 계단 — 2-Lane Road Runner
+   천국의 계단 — 2-Lane Road Runner
 
    조작: 왼쪽 버튼 = 레인 전환, 오른쪽 버튼 = 전진
    2레인 도로가 위로 꼬불꼬불 이어지고,
@@ -15,25 +13,22 @@ type RoadType = 'left' | 'right';
 
 interface RoadRow {
   type: RoadType;
-  isTurn: boolean;   // 꺾이는 칸 (양쪽 레인 모두 이동 가능)
+  isTurn: boolean;
   y: number;
   leftTile?: Phaser.GameObjects.Image;
   rightTile?: Phaser.GameObjects.Image;
   decoration?: Phaser.GameObjects.Container;
 }
 
-// Layout constants
 const FALL_PENALTY_SEC = 3;
+const GAME_DURATION = 60;
 
 export class CommuteScene extends Phaser.Scene {
-  private stageId!: number;
-  private timeLeft = 60;
+  private timeLeft = GAME_DURATION;
   private timerEvent?: Phaser.Time.TimerEvent;
-  private timerText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private score = 0;
   private gameOver = false;
-  private debugMode = false;
 
   // Road
   private rows: RoadRow[] = [];
@@ -53,10 +48,9 @@ export class CommuteScene extends Phaser.Scene {
   private isFalling = false;
   private comboCount = 0;
   private bestCombo = 0;
-  private justSwitched = false; // 레인 전환 직후 여부
+  private justSwitched = false;
 
-  // Background grid
-  private gridGfx!: Phaser.GameObjects.Graphics;
+  // Background
   private padding = 0;
 
   constructor() {
@@ -64,43 +58,25 @@ export class CommuteScene extends Phaser.Scene {
   }
 
   preload() {
-    // 이미 로드됐으면 스킵
-    if (!this.textures.exists('tile-straight')) {
-      this.load.image('tile-straight', 'tiles/straight.png');
-    }
-    if (!this.textures.exists('tile-corner-tl')) {
-      this.load.image('tile-corner-tl', 'tiles/corner-tl.png');
-    }
-    if (!this.textures.exists('tile-corner-tr')) {
-      this.load.image('tile-corner-tr', 'tiles/corner-tr.png');
-    }
-    if (!this.textures.exists('tile-corner-bl')) {
-      this.load.image('tile-corner-bl', 'tiles/corner-bl.png');
-    }
-    if (!this.textures.exists('tile-corner-br')) {
-      this.load.image('tile-corner-br', 'tiles/corner-br.png');
-    }
-    if (!this.textures.exists('building1')) {
-      this.load.image('building1', 'tiles/building1.png');
-    }
-    if (!this.textures.exists('building2')) {
-      this.load.image('building2', 'tiles/building2.png');
-    }
-    if (!this.textures.exists('rabbit')) {
-      this.load.image('rabbit', 'tiles/rabbit.png');
-    }
-    if (!this.textures.exists('btn-forward')) {
-      this.load.image('btn-forward', 'tiles/btn-forward.png');
-    }
-    if (!this.textures.exists('btn-switch')) {
-      this.load.image('btn-switch', 'tiles/btn-switch.png');
+    const assets: [string, string][] = [
+      ['tile-straight', 'map/straight.png'],
+      ['tile-corner-tl', 'map/corner-tl.png'],
+      ['tile-corner-tr', 'map/corner-tr.png'],
+      ['tile-corner-bl', 'map/corner-bl.png'],
+      ['tile-corner-br', 'map/corner-br.png'],
+      ['building1', 'obstacles/building1.png'],
+      ['building2', 'obstacles/building2.png'],
+      ['rabbit', 'character/rabbit.png'],
+      ['btn-forward', 'ui/btn-forward.png'],
+      ['btn-switch', 'ui/btn-switch.png'],
+    ];
+    for (const [key, path] of assets) {
+      if (!this.textures.exists(key)) this.load.image(key, path);
     }
   }
 
-  init(data: { stageId: number; debug?: boolean }) {
-    this.stageId = data.stageId;
-    this.debugMode = data.debug ?? false;
-    this.timeLeft = 60;
+  init() {
+    this.timeLeft = GAME_DURATION;
     this.score = 0;
     this.gameOver = false;
     this.rows = [];
@@ -115,88 +91,49 @@ export class CommuteScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
-    const stage = GameManager.getCurrentStage();
     this.cameras.main.setBackgroundColor('#000000');
 
-    // Lane dimensions — 양쪽 패딩 후 정사각형 타일
+    // Lane dimensions
     this.padding = 30;
     const padding = this.padding;
     const roadW = width - padding * 2;
     this.laneW = roadW / 2;
-    this.tileH = this.laneW; // 정사각형 타일
+    this.tileH = this.laneW;
     this.laneX = {
       left: padding + this.laneW / 2,
       right: padding + this.laneW + this.laneW / 2,
     };
 
-    // ── Dark grid background (비활성) ──
-    this.gridGfx = this.add.graphics().setDepth(0);
-
-    // ── 도로 영역 뒤 검정 차단막: 격자선이 코너 타일 투명부분으로 비치는 것 방지 ──
-    const roadMask = this.add.rectangle(
-      padding + this.laneW, height / 2,
-      this.laneW * 2, height * 10,
-      0x000000, 1,
-    ).setDepth(1);
-
-    // ── Road container (scrolls) ──
+    // Road container (scrolls)
     this.roadContainer = this.add.container(0, 0).setDepth(5);
     this.generateInitialRoad(height);
 
-    // ── Player ──
+    // Player
     this.createPlayer();
 
-    // ── HUD ──
+    // HUD
     this.createHUD(width);
 
-    // ── Buttons ──
+    // Buttons
     this.createButtons(width, height);
 
-    this.emitState();
-  }
-
-  /* ══════════════════════════════════════
-     Background grid
-     ══════════════════════════════════════ */
-
-  private startY = 0; // 첫 타일 Y 위치 저장
-
-  private drawGrid(w: number, h: number) {
-    this.gridGfx.clear();
-    this.gridGfx.lineStyle(1, 0x333355, 0.3);
-
-    // 세로선: 패딩 안쪽 타일 가장자리
-    const p = this.padding;
-    this.gridGfx.lineBetween(p, 0, p, h);
-    this.gridGfx.lineBetween(p + this.laneW, 0, p + this.laneW, h);
-    this.gridGfx.lineBetween(p + this.laneW * 2, 0, p + this.laneW * 2, h);
-
-    // 가로선: 타일 가장자리에 맞춰 스크롤
-    const containerY = this.roadContainer ? this.roadContainer.y : 0;
-    const tileTopBase = this.startY - this.tileH / 2 + containerY;
-    const offsetY = ((tileTopBase % this.tileH) + this.tileH) % this.tileH;
-    for (let y = offsetY; y <= h + this.tileH; y += this.tileH) {
-      this.gridGfx.lineBetween(0, y, w, y);
-    }
   }
 
   update() {
-    // grid disabled
+    // reserved
   }
 
   /* ══════════════════════════════════════
      Road generation
      ══════════════════════════════════════ */
 
+  private startY = 0;
+
   private generateInitialRoad(height: number) {
     this.startY = height - 200;
-    const startY = this.startY;
-
-    // First row: left lane, 초반에 바로 꺾임 나오도록
     this.straightRemaining = 1;
-    this.addRoadRow('left', startY);
+    this.addRoadRow('left', this.startY);
 
-    // Generate ahead
     for (let i = 0; i < 25; i++) {
       this.addNextRow();
     }
@@ -208,29 +145,23 @@ export class CommuteScene extends Phaser.Scene {
     const row: RoadRow = { type, y, isTurn };
 
     if (isTurn) {
-      // 꺾이는 칸: 코너 타일 2개로 ㄱ/ㄴ자 표현
       if (prev!.type === 'left' && type === 'right') {
-        // 좌→우 전환
         row.leftTile = this.createTileImage(this.laneX.left, y, 'tile-corner-tl');
         row.rightTile = this.createTileImage(this.laneX.right, y, 'tile-corner-br');
       } else {
-        // 우→좌 전환
         row.leftTile = this.createTileImage(this.laneX.left, y, 'tile-corner-bl');
         row.rightTile = this.createTileImage(this.laneX.right, y, 'tile-corner-tr');
       }
       this.roadContainer.add(row.leftTile);
       this.roadContainer.add(row.rightTile);
     } else if (type === 'left') {
-      // 직선 왼쪽 레인
       row.leftTile = this.createTileImage(this.laneX.left, y, 'tile-straight');
       this.roadContainer.add(row.leftTile);
     } else {
-      // 직선 오른쪽 레인 (좌우 반전)
       row.rightTile = this.createTileImage(this.laneX.right, y, 'tile-straight', true);
       this.roadContainer.add(row.rightTile);
     }
 
-    // 빈 레인(길이 없는 쪽)에 빌딩 장애물 배치
     if (!isTurn) {
       this.placeObstacle(row, type, y);
     }
@@ -241,11 +172,10 @@ export class CommuteScene extends Phaser.Scene {
   private createTileImage(
     x: number, y: number, key: string, flipX = false,
   ): Phaser.GameObjects.Image {
-    const img = this.add.image(x, y, key)
+    return this.add.image(x, y, key)
       .setDisplaySize(this.laneW, this.tileH)
       .setOrigin(0.5, 0.5)
       .setFlipX(flipX);
-    return img;
   }
 
   private addNextRow() {
@@ -255,23 +185,19 @@ export class CommuteScene extends Phaser.Scene {
     this.addRoadRow(nextType, nextY);
   }
 
-  // 직선 구간 남은 칸 수
   private straightRemaining = 0;
 
   private pickNextRoadType(prevType: RoadType): RoadType {
-    // 직선 구간이 남아있으면 같은 레인 유지
     if (this.straightRemaining > 0) {
       this.straightRemaining--;
       return prevType;
     }
-
-    // 직선 구간 끝 → 반대 레인으로 꺾고, 새 직선 구간 시작 (0~4칸, 0이면 바로 또 꺾임)
     this.straightRemaining = Math.floor(Math.random() * 5);
     return prevType === 'left' ? 'right' : 'left';
   }
 
   /* ══════════════════════════════════════
-     Obstacles (빌딩 이미지)
+     Obstacles
      ══════════════════════════════════════ */
 
   private placeObstacle(row: RoadRow, type: RoadType, y: number) {
@@ -294,11 +220,8 @@ export class CommuteScene extends Phaser.Scene {
 
   private createPlayer() {
     const { height } = this.scale;
-    const startX = this.laneX.left;
-    const startY = height - 200;
     const rabbitSize = this.laneW * 0.45;
-
-    this.player = this.add.image(startX, startY, 'rabbit')
+    this.player = this.add.image(this.laneX.left, height - 200, 'rabbit')
       .setDisplaySize(rabbitSize, rabbitSize)
       .setOrigin(0.5, 0.5)
       .setDepth(150);
@@ -313,44 +236,32 @@ export class CommuteScene extends Phaser.Scene {
      ══════════════════════════════════════ */
 
   private createHUD(width: number) {
-    // Stage number
-    const stageBg = this.add.rectangle(50, 30, 50, 32, 0x000000, 0.7)
-      .setStrokeStyle(2, 0xffffff).setDepth(200);
-    this.scoreText = this.add.text(50, 30, '01', {
+    this.scoreText = this.add.text(50, 30, '0', {
       fontFamily: 'monospace', fontSize: '18px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(201);
+    this.add.rectangle(50, 30, 50, 32, 0x000000, 0.7)
+      .setStrokeStyle(2, 0xffffff).setDepth(200);
 
-    // Timer bar
-    const barBg = this.add.rectangle(width / 2, 30, width - 160, 24, 0x333333, 0.8)
+    this.add.rectangle(width / 2, 30, width - 160, 24, 0x333333, 0.8)
       .setStrokeStyle(2, 0x555555).setDepth(200);
-    this.timerText = this.add.text(width / 2, 30, '', {
-      fontFamily: 'monospace', fontSize: '1px', color: '#00000000',
-    }).setOrigin(0.5).setDepth(201);
 
-    // Green timer fill (will shrink over time)
     const barW = width - 164;
     const timerFill = this.add.rectangle(
-      width / 2 - barW / 2 + barW / 2, 30,
-      barW, 18, 0x44cc44, 1
+      width / 2, 30, barW, 18, 0x44cc44, 1,
     ).setDepth(201);
 
-    // Score / alarm icon
-    const alarmBg = this.add.rectangle(width - 50, 30, 60, 32, 0x000000, 0.7)
+    this.add.rectangle(width - 50, 30, 60, 32, 0x000000, 0.7)
       .setStrokeStyle(2, 0xffffff).setDepth(200);
-    const alarmText = this.add.text(width - 50, 30, '⏰ 60', {
+    const alarmText = this.add.text(width - 50, 30, `⏰ ${GAME_DURATION}`, {
       fontFamily: 'monospace', fontSize: '14px', color: '#ffffff',
     }).setOrigin(0.5).setDepth(201);
 
-    // Diagonal stripes on timer bar
-    const stripeGfx = this.add.graphics().setDepth(202);
-
     this.timerEvent = this.time.addEvent({
-      delay: 1000, repeat: 59,
+      delay: 1000, repeat: GAME_DURATION - 1,
       callback: () => {
         this.timeLeft--;
         alarmText.setText(`⏰ ${this.timeLeft}`);
-        // Shrink timer fill
-        const pct = this.timeLeft / 60;
+        const pct = this.timeLeft / GAME_DURATION;
         timerFill.setScale(pct, 1);
         timerFill.x = width / 2 - barW / 2 + (barW * pct) / 2;
 
@@ -371,9 +282,7 @@ export class CommuteScene extends Phaser.Scene {
     const btnSize = 200;
     const btnY = height - 115;
 
-    // ── Left button: 레인전환 ──
-    const leftBtnX = btnSize / 2 + 10;
-    const leftBtn = this.add.image(leftBtnX, btnY, 'btn-switch')
+    const leftBtn = this.add.image(btnSize / 2 + 10, btnY, 'btn-switch')
       .setDisplaySize(btnSize, btnSize)
       .setInteractive({ useHandCursor: true }).setDepth(200);
 
@@ -387,9 +296,7 @@ export class CommuteScene extends Phaser.Scene {
       });
     });
 
-    // ── Right button: 전진 ──
-    const rightBtnX = width - btnSize / 2 - 10;
-    const rightBtn = this.add.image(rightBtnX, btnY, 'btn-forward')
+    const rightBtn = this.add.image(width - btnSize / 2 - 10, btnY, 'btn-forward')
       .setDisplaySize(btnSize, btnSize)
       .setInteractive({ useHandCursor: true }).setDepth(200);
 
@@ -408,19 +315,13 @@ export class CommuteScene extends Phaser.Scene {
      Movement logic
      ══════════════════════════════════════ */
 
-  /** ↔ 버튼: 옆으로만 이동 (꺾이는 칸에서만 가능, 연속 전환 불가) */
   private switchLane() {
     const opposite: Lane = this.currentLane === 'left' ? 'right' : 'left';
-
-    // 이미 전환한 상태에서 또 전환 = 회전 후 부딪힘
-    // 현재 칸이 꺾이는 칸이 아니면 = 회전 후 부딪힘
     const currentRow = this.rows[this.currentRowIdx];
     const canSwitch = !this.justSwitched && currentRow?.isTurn;
-
     const targetAngle = opposite === 'right' ? 90 : -90;
 
     if (!canSwitch) {
-      // 회전 → 살짝 이동 시도 → 부딪힘
       this.isFalling = true;
       this.tweens.add({
         targets: this.player,
@@ -429,12 +330,9 @@ export class CommuteScene extends Phaser.Scene {
         onComplete: () => {
           const bumpX = this.player.x + (opposite === 'right' ? 30 : -30);
           this.tweens.add({
-            targets: this.player,
-            x: bumpX,
+            targets: this.player, x: bumpX,
             duration: 80, ease: 'Quad.easeOut',
-            onComplete: () => {
-              this.onCrash(opposite);
-            },
+            onComplete: () => this.onCrash(opposite),
           });
         },
       });
@@ -444,13 +342,11 @@ export class CommuteScene extends Phaser.Scene {
     this.currentLane = opposite;
     this.justSwitched = true;
 
-    // 1) 먼저 이동 방향으로 회전
     this.tweens.add({
       targets: this.player,
       angle: targetAngle,
       duration: 100, ease: 'Quad.easeOut',
       onComplete: () => {
-        // 2) 회전 끝나면 옆으로 이동
         this.tweens.add({
           targets: this.player,
           x: this.laneX[opposite],
@@ -460,9 +356,7 @@ export class CommuteScene extends Phaser.Scene {
     });
   }
 
-  /** ▲ 버튼: 위로만 이동 (현재 레인 유지) */
   private moveForward() {
-    // 현재 꺾이는 칸에 있으면 → 레인 전환 안 했으면 충돌
     const currentRow = this.rows[this.currentRowIdx];
     if (currentRow.isTurn && this.currentLane !== currentRow.type) {
       this.onForwardCrash();
@@ -473,39 +367,32 @@ export class CommuteScene extends Phaser.Scene {
     const nextRow = this.rows[nextIdx];
     if (!nextRow) return;
 
-    // 다음 칸 진입 가능 체크: 꺾이는 칸은 양쪽 허용, 직선은 해당 레인만
     const canPass = nextRow.isTurn || nextRow.type === this.currentLane;
     if (!canPass) {
       this.onForwardCrash();
       return;
     }
 
-    // Success — advance one row
     this.justSwitched = false;
     this.currentRowIdx = nextIdx;
     this.score++;
+    this.scoreText.setText(`${this.score}`);
     this.comboCount++;
     if (this.comboCount > this.bestCombo) this.bestCombo = this.comboCount;
 
-    // Ensure more road ahead
     while (this.rows.length - this.currentRowIdx < 15) {
       this.addNextRow();
     }
 
-    // 1) 먼저 위를 향하도록 회전 복귀
     this.tweens.add({
       targets: this.player,
       angle: 0,
       duration: 80, ease: 'Quad.easeOut',
-      onComplete: () => {
-        // 2) 회전 끝나면 전진 스크롤
-        this.scrollToCurrentRow(nextRow);
-      },
+      onComplete: () => this.scrollToCurrentRow(nextRow),
     });
 
-    // Combo popup
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
-      this.showPopup(`${this.comboCount} 콤보! 🔥`, '#ffd700');
+      this.showPopup(`${this.comboCount} 콤보!`, '#ffd700');
     }
 
     this.cleanupOldRows();
@@ -522,7 +409,6 @@ export class CommuteScene extends Phaser.Scene {
       duration: 100, ease: 'Quad.easeOut',
     });
 
-    // Keep player at screen center Y, correct lane X
     this.tweens.add({
       targets: this.player,
       x: this.laneX[this.currentLane],
@@ -542,10 +428,9 @@ export class CommuteScene extends Phaser.Scene {
   }
 
   /* ══════════════════════════════════════
-     Crash (wrong lane)
+     Crash
      ══════════════════════════════════════ */
 
-  /** 위로 충돌: 살짝 올라갔다 돌아옴 */
   private onForwardCrash() {
     this.isFalling = true;
     this.comboCount = 0;
@@ -553,8 +438,6 @@ export class CommuteScene extends Phaser.Scene {
     this.cameras.main.shake(200, 0.015);
 
     const originY = this.player.y;
-
-    // 살짝 위로 올라갔다 돌아옴
     this.tweens.add({
       targets: this.player,
       y: originY - 25,
@@ -563,9 +446,7 @@ export class CommuteScene extends Phaser.Scene {
       onComplete: () => {
         this.timeLeft = Math.max(0, this.timeLeft - FALL_PENALTY_SEC);
         this.showPopup(`충돌! -${FALL_PENALTY_SEC}초`, '#ff6b6b');
-
         if (this.timeLeft <= 0) { this.endGame(); return; }
-
         this.time.delayedCall(300, () => {
           this.player.setAngle(0);
           this.setPlayerHurt(false);
@@ -582,13 +463,10 @@ export class CommuteScene extends Phaser.Scene {
     this.setPlayerHurt(true);
     this.cameras.main.shake(200, 0.015);
 
-    // 제자리에서 멈춤 — 도로 밖으로 안 나감
     this.timeLeft = Math.max(0, this.timeLeft - FALL_PENALTY_SEC);
     this.showPopup(`충돌! -${FALL_PENALTY_SEC}초`, '#ff6b6b');
-
     if (this.timeLeft <= 0) { this.endGame(); return; }
 
-    // 원래 위치 + 각도로 복귀
     this.time.delayedCall(300, () => {
       this.player.x = this.laneX[this.currentLane];
       this.player.setAngle(0);
@@ -623,30 +501,41 @@ export class CommuteScene extends Phaser.Scene {
     this.gameOver = true;
     this.timerEvent?.remove();
 
-    this.time.delayedCall(500, () => {
-      if (this.debugMode) {
-        this.scene.start('BootScene');
-      } else {
-        this.scene.start('ResultScene', {
-          stageId: this.stageId,
-          score: this.score,
-          completed: true,
-          timeRemaining: this.timeLeft,
-        });
-      }
-    });
-  }
+    const { width, height } = this.scale;
 
-  private emitState() {
-    const stage = GameManager.getCurrentStage();
-    emitGameState({
-      scene: 'CommuteScene',
-      stageId: this.stageId,
-      progress: GameManager.progress,
-      allCleared: false,
-      stress: 0,
-      time: stage.time,
-      period: stage.period,
+    // 게임오버 오버레이
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0)
+      .setDepth(400);
+    this.tweens.add({ targets: overlay, fillAlpha: 0.7, duration: 500 });
+
+    const resultText = this.add.text(width / 2, height * 0.35, `점수: ${this.score}`, {
+      fontFamily: 'sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(401).setAlpha(0);
+
+    const comboText = this.add.text(width / 2, height * 0.45, `최대 콤보: ${this.bestCombo}`, {
+      fontFamily: 'sans-serif', fontSize: '22px', color: '#aaaacc',
+    }).setOrigin(0.5).setDepth(401).setAlpha(0);
+
+    this.time.delayedCall(500, () => {
+      this.tweens.add({ targets: resultText, alpha: 1, duration: 300 });
+      this.tweens.add({ targets: comboText, alpha: 1, duration: 300, delay: 150 });
+    });
+
+    // 다시하기 버튼
+    const retryBtn = this.add.rectangle(width / 2, height * 0.6, 220, 56, 0xe94560)
+      .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
+    const retryText = this.add.text(width / 2, height * 0.6, '다시하기', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(402).setAlpha(0);
+
+    retryBtn.on('pointerover', () => retryBtn.setFillStyle(0xd63651));
+    retryBtn.on('pointerout', () => retryBtn.setFillStyle(0xe94560));
+    retryBtn.on('pointerdown', () => {
+      this.scene.start('CommuteScene');
+    });
+
+    this.time.delayedCall(800, () => {
+      this.tweens.add({ targets: [retryBtn, retryText], alpha: 1, duration: 300 });
     });
   }
 }

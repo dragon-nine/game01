@@ -1,11 +1,7 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
-import { MinigameIntroScene } from './scenes/MinigameIntroScene';
-import { ResultScene } from './scenes/ResultScene';
-import { RankingScene } from './scenes/RankingScene';
-import { CommuteScene } from './scenes/minigames/CommuteScene';
+import { CommuteScene } from './scenes/CommuteScene';
 
-// Design reference resolution (iPhone 14/15 — 9:19.5)
 export const DESIGN_WIDTH = 390;
 export const DESIGN_HEIGHT = 844;
 
@@ -21,9 +17,6 @@ export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [
-      BootScene, MinigameIntroScene, ResultScene, RankingScene,
-      CommuteScene,
-    ],
+    scene: [BootScene, CommuteScene],
   };
 }
