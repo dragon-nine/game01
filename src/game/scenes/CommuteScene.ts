@@ -7,6 +7,7 @@ import {
 import { Road } from '../Road';
 import { Player } from '../Player';
 import { HUD } from '../HUD';
+import { submitGameCenterLeaderBoardScore, openGameCenterLeaderboard } from '@apps-in-toss/web-framework';
 
 export class CommuteScene extends Phaser.Scene {
   private road!: Road;
@@ -30,24 +31,6 @@ export class CommuteScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'CommuteScene' });
-  }
-
-  preload() {
-    const assets: [string, string][] = [
-      ['tile-straight', 'map/straight.png'],
-      ['tile-corner-tl', 'map/corner-tl.png'],
-      ['tile-corner-tr', 'map/corner-tr.png'],
-      ['tile-corner-bl', 'map/corner-bl.png'],
-      ['tile-corner-br', 'map/corner-br.png'],
-      ['building1', 'obstacles/building1.png'],
-      ['building2', 'obstacles/building2.png'],
-      ['rabbit', 'character/rabbit.png'],
-      ['btn-forward', 'ui/btn-forward.png'],
-      ['btn-switch', 'ui/btn-switch.png'],
-    ];
-    for (const [key, path] of assets) {
-      if (!this.textures.exists(key)) this.load.image(key, path);
-    }
   }
 
   init() {
@@ -281,17 +264,20 @@ export class CommuteScene extends Phaser.Scene {
     this.gameOver = true;
     this.hud.stopTimer();
 
+    // 리더보드에 점수 제출
+    this.submitScore();
+
     const { width, height } = this.scale;
 
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0)
       .setDepth(400);
     this.tweens.add({ targets: overlay, fillAlpha: 0.7, duration: 500 });
 
-    const resultText = this.add.text(width / 2, height * 0.35, `점수: ${this.score}`, {
+    const resultText = this.add.text(width / 2, height * 0.30, `점수: ${this.score}`, {
       fontFamily: 'sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
-    const comboText = this.add.text(width / 2, height * 0.45, `최대 콤보: ${this.bestCombo}`, {
+    const comboText = this.add.text(width / 2, height * 0.40, `최대 콤보: ${this.bestCombo}`, {
       fontFamily: 'sans-serif', fontSize: '22px', color: '#aaaacc',
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
@@ -300,9 +286,21 @@ export class CommuteScene extends Phaser.Scene {
       this.tweens.add({ targets: comboText, alpha: 1, duration: 300, delay: 150 });
     });
 
-    const retryBtn = this.add.rectangle(width / 2, height * 0.6, 220, 56, 0xe94560)
+    // 리더보드 보기 버튼
+    const lbBtn = this.add.rectangle(width / 2, height * 0.52, 220, 56, 0x3182f6)
       .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
-    const retryText = this.add.text(width / 2, height * 0.6, '다시하기', {
+    const lbText = this.add.text(width / 2, height * 0.52, '랭킹 보기', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(402).setAlpha(0);
+
+    lbBtn.on('pointerover', () => lbBtn.setFillStyle(0x1b6ce5));
+    lbBtn.on('pointerout', () => lbBtn.setFillStyle(0x3182f6));
+    lbBtn.on('pointerdown', () => openGameCenterLeaderboard());
+
+    // 다시하기 버튼
+    const retryBtn = this.add.rectangle(width / 2, height * 0.62, 220, 56, 0xe94560)
+      .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
+    const retryText = this.add.text(width / 2, height * 0.62, '다시하기', {
       fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(402).setAlpha(0);
 
@@ -311,7 +309,16 @@ export class CommuteScene extends Phaser.Scene {
     retryBtn.on('pointerdown', () => this.scene.start('CommuteScene'));
 
     this.time.delayedCall(800, () => {
-      this.tweens.add({ targets: [retryBtn, retryText], alpha: 1, duration: 300 });
+      this.tweens.add({ targets: [lbBtn, lbText], alpha: 1, duration: 300 });
+      this.tweens.add({ targets: [retryBtn, retryText], alpha: 1, duration: 300, delay: 150 });
     });
+  }
+
+  private async submitScore() {
+    try {
+      await submitGameCenterLeaderBoardScore({ score: String(this.score) });
+    } catch {
+      // 점수 제출 실패 — 무시
+    }
   }
 }
