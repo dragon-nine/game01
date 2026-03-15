@@ -110,11 +110,12 @@ export class CommuteScene extends Phaser.Scene {
   /* ── Buttons ── */
 
   private createButtons(width: number, height: number) {
+    const btnSize = this.laneW * 0.85; // 타일 크기 비례
     const btnY = height - BTN_BOTTOM_OFFSET;
-    const pressSize = BTN_SIZE * BTN_PRESS_SCALE;
+    const pressSize = btnSize * BTN_PRESS_SCALE;
 
-    const leftBtn = this.add.image(BTN_SIZE / 2 + BTN_MARGIN, btnY, 'btn-switch')
-      .setDisplaySize(BTN_SIZE, BTN_SIZE)
+    const leftBtn = this.add.image(btnSize / 2 + BTN_MARGIN, btnY, 'btn-switch')
+      .setDisplaySize(btnSize, btnSize)
       .setInteractive({ useHandCursor: true }).setDepth(200);
 
     leftBtn.on('pointerdown', () => {
@@ -124,13 +125,13 @@ export class CommuteScene extends Phaser.Scene {
       this.tweens.killTweensOf(leftBtn);
       leftBtn.setDisplaySize(pressSize, pressSize);
       this.tweens.add({
-        targets: leftBtn, displayWidth: BTN_SIZE, displayHeight: BTN_SIZE,
+        targets: leftBtn, displayWidth: btnSize, displayHeight: btnSize,
         duration: BTN_PRESS_DURATION, ease: 'Quad.easeOut',
       });
     });
 
-    const rightBtn = this.add.image(width - BTN_SIZE / 2 - BTN_MARGIN, btnY, 'btn-forward')
-      .setDisplaySize(BTN_SIZE, BTN_SIZE)
+    const rightBtn = this.add.image(width - btnSize / 2 - BTN_MARGIN, btnY, 'btn-forward')
+      .setDisplaySize(btnSize, btnSize)
       .setInteractive({ useHandCursor: true }).setDepth(200);
 
     rightBtn.on('pointerdown', () => {
@@ -140,7 +141,7 @@ export class CommuteScene extends Phaser.Scene {
       this.tweens.killTweensOf(rightBtn);
       rightBtn.setDisplaySize(pressSize, pressSize);
       this.tweens.add({
-        targets: rightBtn, displayWidth: BTN_SIZE, displayHeight: BTN_SIZE,
+        targets: rightBtn, displayWidth: btnSize, displayHeight: btnSize,
         duration: BTN_PRESS_DURATION, ease: 'Quad.easeOut',
       });
     });
