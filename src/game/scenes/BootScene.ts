@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Analytics } from '@apps-in-toss/web-framework';
+import { Analytics, eventLog } from '@apps-in-toss/web-framework';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -111,6 +111,21 @@ export class BootScene extends Phaser.Scene {
       });
     });
 
+    // 홈화면 추가 버튼
+    const homeBtn = this.add.text(width / 2, height * 0.82, '홈 화면에 추가', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#6666aa',
+    }).setOrigin(0.5).setAlpha(0).setInteractive({ useHandCursor: true });
+
+    homeBtn.on('pointerover', () => homeBtn.setColor('#8888cc'));
+    homeBtn.on('pointerout', () => homeBtn.setColor('#6666aa'));
+    homeBtn.on('pointerdown', () => {
+      this.sound.play('sfx-click', { volume: 0.6 });
+      eventLog({ log_name: 'homescreen_guide_open', log_type: 'click', params: { from: 'boot' } });
+      this.showHomeScreenGuide();
+    });
+
+    this.tweens.add({ targets: homeBtn, alpha: 1, duration: 600, delay: 1800 });
+
     // Credits
     this.add.text(width / 2, height * 0.90, 'DragonNine Studio', {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#333344',
@@ -119,5 +134,79 @@ export class BootScene extends Phaser.Scene {
     this.add.text(width / 2, height * 0.93, 'Music by CodeManu (OpenGameArt.org) · SFX by Kenney.nl', {
       fontFamily: 'sans-serif', fontSize: '9px', color: '#222233',
     }).setOrigin(0.5);
+  }
+
+  /** 홈화면 추가 가이드 표시 (CommuteScene에서도 호출 가능하도록 static-like) */
+  showHomeScreenGuide() {
+    const { width, height } = this.scale;
+    const items: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+      .setDepth(600).setInteractive();
+    items.push(overlay);
+
+    // 닫기 버튼
+    const closeBtn = this.add.text(width - 20, 20, '✕', {
+      fontFamily: 'sans-serif', fontSize: '28px', color: '#888888',
+    }).setOrigin(1, 0).setDepth(601).setInteractive({ useHandCursor: true });
+    items.push(closeBtn);
+
+    // 앱 아이콘 (D9 로고)
+    const iconBg = this.add.circle(width / 2, height * 0.15, 40, 0xe94560).setDepth(601);
+    const iconText = this.add.text(width / 2, height * 0.15, 'D9', {
+      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(602);
+    items.push(iconBg, iconText);
+
+    // 타이틀
+    const guideTitle = this.add.text(width / 2, height * 0.24, '직장인 잔혹사를\n홈 화면에 추가해보세요', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+      align: 'center', lineSpacing: 8,
+    }).setOrigin(0.5).setDepth(601);
+    items.push(guideTitle);
+
+    // 스텝 가이드
+    const stepStyle = { fontFamily: 'sans-serif', fontSize: '16px', color: '#ccccdd', lineSpacing: 6 };
+    const numStyle = { fontFamily: 'sans-serif', fontSize: '22px', color: '#e94560', fontStyle: 'bold' as const };
+
+    const stepY = height * 0.38;
+    const stepGap = height * 0.09;
+    const leftX = 36;
+
+    // Step 1
+    const n1 = this.add.text(leftX, stepY, '1', numStyle).setDepth(601);
+    const s1 = this.add.text(leftX + 30, stepY, '오른쪽 아래  ⬆  아이콘을 누르고,', stepStyle).setDepth(601);
+    items.push(n1, s1);
+
+    // Step 2
+    const n2 = this.add.text(leftX, stepY + stepGap, '2', numStyle).setDepth(601);
+    const s2 = this.add.text(leftX + 30, stepY + stepGap, '새로 뜬 창을 스크롤해서', stepStyle).setDepth(601);
+    items.push(n2, s2);
+
+    // Step 3
+    const n3 = this.add.text(leftX, stepY + stepGap * 2, '3', numStyle).setDepth(601);
+    const s3 = this.add.text(leftX + 30, stepY + stepGap * 2, '⊕ 홈 화면에 추가  를 선택하세요', stepStyle).setDepth(601);
+    items.push(n3, s3);
+
+    // 장점 안내
+    const benefit = this.add.text(width / 2, height * 0.72, '앱처럼 빠르게 실행할 수 있어요!', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#8888aa',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(benefit);
+
+    // 확인 버튼
+    const okBtn = this.add.rectangle(width / 2, height * 0.82, 200, 50, 0xe94560)
+      .setInteractive({ useHandCursor: true }).setDepth(601);
+    const okText = this.add.text(width / 2, height * 0.82, '확인', {
+      fontFamily: 'sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(602);
+    items.push(okBtn, okText);
+
+    const close = () => items.forEach(item => item.destroy());
+    closeBtn.on('pointerdown', close);
+    okBtn.on('pointerdown', () => {
+      this.sound.play('sfx-click', { volume: 0.6 });
+      close();
+    });
   }
 }

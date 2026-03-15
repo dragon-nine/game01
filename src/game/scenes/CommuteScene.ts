@@ -383,68 +383,79 @@ export class CommuteScene extends Phaser.Scene {
     return false; // 현재는 항상 자체광고로 fallback
   }
 
-  /** 자체 광고 (DragonNine Studio 홍보) */
+  /** 자체 광고 (홈화면 추가 가이드) */
   private showHouseAd(onComplete: () => void) {
     const { width, height } = this.scale;
+    const adItems: Phaser.GameObjects.GameObject[] = [];
 
     // 배경
     const adBg = this.add.rectangle(width / 2, height / 2, width, height, 0x0a0a1e)
       .setDepth(450);
+    adItems.push(adBg);
 
     // 상단 라벨
-    const adLabel = this.add.text(width / 2, height * 0.08, 'AD', {
+    adItems.push(this.add.text(width / 2, height * 0.05, 'AD', {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#666688',
-    }).setOrigin(0.5).setDepth(451);
+    }).setOrigin(0.5).setDepth(451));
 
-    // 로고 영역
-    const logoBg = this.add.circle(width / 2, height * 0.30, 50, 0xe94560)
-      .setDepth(451);
-    const logoText = this.add.text(width / 2, height * 0.30, 'D9', {
-      fontFamily: 'sans-serif', fontSize: '36px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(452);
+    // 앱 아이콘
+    const iconBg = this.add.circle(width / 2, height * 0.15, 40, 0xe94560).setDepth(451);
+    adItems.push(iconBg);
+    adItems.push(this.add.text(width / 2, height * 0.15, 'D9', {
+      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(452));
 
-    // 스튜디오명
-    const studioName = this.add.text(width / 2, height * 0.42, 'DragonNine Studio', {
+    // 로고 펄스
+    this.tweens.add({
+      targets: iconBg, scale: 1.08, duration: 800,
+      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    // 타이틀
+    adItems.push(this.add.text(width / 2, height * 0.25, '직장인 잔혹사를\n홈 화면에 추가해보세요!', {
       fontFamily: 'sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(451);
+      align: 'center', lineSpacing: 8,
+    }).setOrigin(0.5).setDepth(451));
 
-    // 슬로건
-    const slogan = this.add.text(width / 2, height * 0.48, '재미있는 게임을 만듭니다', {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#8888aa',
-    }).setOrigin(0.5).setDepth(451);
+    // 스텝 가이드
+    const stepY = height * 0.38;
+    const stepGap = height * 0.08;
+    const leftX = 36;
+    const numStyle = { fontFamily: 'sans-serif', fontSize: '22px', color: '#e94560', fontStyle: 'bold' as const };
+    const stepStyle = { fontFamily: 'sans-serif', fontSize: '15px', color: '#ccccdd' };
 
-    // 게임 소개 카드
-    const cardBg = this.add.rectangle(width / 2, height * 0.60, width * 0.75, 80, 0x1a1a3e)
-      .setStrokeStyle(2, 0x3333666).setDepth(451);
-    const cardTitle = this.add.text(width / 2, height * 0.57, '직장인 잔혹사', {
-      fontFamily: 'sans-serif', fontSize: '18px', color: '#e94560', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(452);
-    const cardDesc = this.add.text(width / 2, height * 0.63, '지금 플레이 중!', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#aaaacc',
-    }).setOrigin(0.5).setDepth(452);
+    adItems.push(this.add.text(leftX, stepY, '1', numStyle).setDepth(451));
+    adItems.push(this.add.text(leftX + 30, stepY, '오른쪽 아래  ⬆  아이콘을 누르고,', stepStyle).setDepth(451));
+
+    adItems.push(this.add.text(leftX, stepY + stepGap, '2', numStyle).setDepth(451));
+    adItems.push(this.add.text(leftX + 30, stepY + stepGap, '새로 뜬 창을 스크롤해서', stepStyle).setDepth(451));
+
+    adItems.push(this.add.text(leftX, stepY + stepGap * 2, '3', numStyle).setDepth(451));
+    adItems.push(this.add.text(leftX + 30, stepY + stepGap * 2, '⊕ 홈 화면에 추가  를 선택하세요', stepStyle).setDepth(451));
+
+    // 장점
+    adItems.push(this.add.text(width / 2, height * 0.66, '앱처럼 바로 실행할 수 있어요!', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#8888aa',
+    }).setOrigin(0.5).setDepth(451));
 
     // 카운트다운
     let countdown = 3;
     const countText = this.add.text(width / 2, height * 0.78, `${countdown}`, {
       fontFamily: 'sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(451);
+    adItems.push(countText);
+
     const countLabel = this.add.text(width / 2, height * 0.84, '잠시 후 부활합니다', {
       fontFamily: 'sans-serif', fontSize: '14px', color: '#666688',
     }).setOrigin(0.5).setDepth(451);
+    adItems.push(countLabel);
 
-    // 하단 안내
-    const footer = this.add.text(width / 2, height * 0.93, 'dragonnine.com', {
+    // 하단
+    adItems.push(this.add.text(width / 2, height * 0.93, 'DragonNine Studio', {
       fontFamily: 'sans-serif', fontSize: '11px', color: '#444466',
-    }).setOrigin(0.5).setDepth(451);
+    }).setOrigin(0.5).setDepth(451));
 
-    const adItems = [adBg, adLabel, logoBg, logoText, studioName, slogan,
-      cardBg, cardTitle, cardDesc, countText, countLabel, footer];
-
-    // 로고 펄스 애니메이션
-    this.tweens.add({
-      targets: logoBg, scale: 1.08, duration: 800,
-      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
+    eventLog({ log_name: 'homescreen_guide_impression', log_type: 'impression', params: { from: 'house_ad' } });
 
     this.time.addEvent({
       delay: 1000,
