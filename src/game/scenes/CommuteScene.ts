@@ -7,7 +7,7 @@ import {
 import { Road } from '../Road';
 import { Player } from '../Player';
 import { HUD } from '../HUD';
-import { submitGameCenterLeaderBoardScore, openGameCenterLeaderboard } from '@apps-in-toss/web-framework';
+import { submitGameCenterLeaderBoardScore, openGameCenterLeaderboard, Analytics, eventLog } from '@apps-in-toss/web-framework';
 
 export class CommuteScene extends Phaser.Scene {
   private road!: Road;
@@ -158,6 +158,10 @@ export class CommuteScene extends Phaser.Scene {
     // Gameplay BGM
     this.bgm = this.sound.add('bgm-gameplay', { loop: true, volume: 0.35 });
     this.bgm.play();
+
+    // Analytics: 게임 시작
+    Analytics.screen({ log_name: 'screen_game' });
+    eventLog({ log_name: 'game_start', log_type: 'event', params: {} });
   }
 
   /* ── Movement ── */
@@ -169,12 +173,12 @@ export class CommuteScene extends Phaser.Scene {
 
     if (!canSwitch) {
       this.isFalling = true;
-      this.sound.play('sfx-crash', { volume: 0.7 });
+      this.playSfx('sfx-crash', 0.7);
       this.player.animateCrashSwitch(opposite, () => this.onCrash());
       return;
     }
 
-    this.sound.play('sfx-switch', { volume: 0.5 });
+    this.playSfx('sfx-switch', 0.5);
     this.player.switchTo(opposite);
     this.justSwitched = true;
     this.hud.addTime(ACTION_BONUS);
@@ -198,7 +202,7 @@ export class CommuteScene extends Phaser.Scene {
       return;
     }
 
-    this.sound.play('sfx-forward', { volume: 0.4 });
+    this.playSfx('sfx-forward', 0.4);
     this.justSwitched = false;
     this.currentRowIdx = nextIdx;
     this.score++;
@@ -214,7 +218,7 @@ export class CommuteScene extends Phaser.Scene {
     this.player.animateForward(() => this.scrollToCurrentRow());
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
-      this.sound.play('sfx-combo', { volume: 0.7 });
+      this.playSfx('sfx-combo', 0.7);
       this.showPopup(`${this.comboCount} 콤보!`, '#ffd700');
     }
 
@@ -241,7 +245,7 @@ export class CommuteScene extends Phaser.Scene {
   private onForwardCrash() {
     this.isFalling = true;
     this.player.setHurt(true);
-    this.sound.play('sfx-crash', { volume: 0.7 });
+    this.playSfx('sfx-crash', 0.7);
     this.cameras.main.shake(200, 0.015);
     this.player.animateForwardCrash(() => this.endGame());
   }
@@ -274,7 +278,14 @@ export class CommuteScene extends Phaser.Scene {
     this.gameOver = true;
     this.hud.stopTimer();
     this.bgm?.stop();
-    this.sound.play('sfx-game-over', { volume: 0.6 });
+    this.playSfx('sfx-game-over', 0.6);
+
+    // Analytics: 게임 오버
+    eventLog({
+      log_name: 'game_over',
+      log_type: 'event',
+      params: { score: this.score, best_combo: this.bestCombo },
+    });
 
     // 리더보드에 점수 제출
     this.submitScore();
@@ -308,7 +319,8 @@ export class CommuteScene extends Phaser.Scene {
     lbBtn.on('pointerover', () => lbBtn.setFillStyle(0x1b6ce5));
     lbBtn.on('pointerout', () => lbBtn.setFillStyle(0x3182f6));
     lbBtn.on('pointerdown', () => {
-      this.sound.play('sfx-click', { volume: 0.6 });
+      this.playSfx('sfx-click', 0.6);
+      Analytics.click({ log_name: 'leaderboard_open' });
       openGameCenterLeaderboard();
     });
 
@@ -322,7 +334,8 @@ export class CommuteScene extends Phaser.Scene {
     retryBtn.on('pointerover', () => retryBtn.setFillStyle(0xd63651));
     retryBtn.on('pointerout', () => retryBtn.setFillStyle(0xe94560));
     retryBtn.on('pointerdown', () => {
-      this.sound.play('sfx-click', { volume: 0.6 });
+      this.playSfx('sfx-click', 0.6);
+      Analytics.click({ log_name: 'game_retry' });
       this.scene.start('CommuteScene');
     });
 
@@ -330,6 +343,12 @@ export class CommuteScene extends Phaser.Scene {
       this.tweens.add({ targets: [lbBtn, lbText], alpha: 1, duration: 300 });
       this.tweens.add({ targets: [retryBtn, retryText], alpha: 1, duration: 300, delay: 150 });
     });
+  }
+
+  private playSfx(key: string, volume: number) {
+    if (!this.hud.isSfxMuted()) {
+      this.sound.play(key, { volume });
+    }
   }
 
   private async submitScore() {

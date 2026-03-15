@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Analytics } from '@apps-in-toss/web-framework';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -43,6 +44,9 @@ export class BootScene extends Phaser.Scene {
     if (!this.sound.get('bgm-menu')) {
       this.sound.add('bgm-menu', { loop: true, volume: 0.4 }).play();
     }
+
+    // Analytics: 타이틀 화면 진입
+    Analytics.screen({ log_name: 'screen_boot' });
 
     // Particles
     for (let i = 0; i < 20; i++) {
