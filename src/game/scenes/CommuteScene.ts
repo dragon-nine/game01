@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Lane } from '../constants';
 import {
   PADDING, START_TIME,
-  BTN_SIZE, BTN_MARGIN, BTN_BOTTOM_OFFSET, BTN_PRESS_SCALE, BTN_PRESS_DURATION,
+  BTN_MARGIN, BTN_BOTTOM_OFFSET, BTN_PRESS_SCALE, BTN_PRESS_DURATION,
 } from '../constants';
 import { Road } from '../Road';
 import { Player } from '../Player';

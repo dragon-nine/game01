@@ -87,18 +87,6 @@ export class HUD {
     this.pulseScore();
   }
 
-  hideScore() {
-    this.scoreText.setAlpha(0);
-  }
-
-  showScore() {
-    this.scoreText.setAlpha(1);
-  }
-
-  getScoreY() {
-    return this.scoreText.y + this.scoreText.height * 0.4;
-  }
-
   pulseScore() {
     this.scene.tweens.killTweensOf(this.scoreText);
     this.scoreText.setScale(1.25);
