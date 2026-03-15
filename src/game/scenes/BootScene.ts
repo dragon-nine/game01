@@ -150,9 +150,6 @@ export class BootScene extends Phaser.Scene {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '12px', color: '#333344',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.93, 'Music by CodeManu (OpenGameArt.org) · SFX by Kenney.nl', {
-      fontFamily: 'GMarketSans, sans-serif', fontSize: '9px', color: '#222233',
-    }).setOrigin(0.5);
   }
 
   private showSettings() {
@@ -200,6 +197,11 @@ export class BootScene extends Phaser.Scene {
     });
 
     // 닫기
+    // 크레딧
+    ov.addText(width / 2, height * 0.74, 'Music by CodeManu (OpenGameArt.org)\nSFX by Kenney.nl', {
+      fontSize: '10px', color: '#555577', align: 'center',
+    });
+
     ov.addButton(width / 2, height * 0.65, 160, 48, '닫기', 0x555555,
       () => ov.close(), { color: '#cccccc' });
     // addButton은 alpha 0으로 생성되므로 즉시 보이게
