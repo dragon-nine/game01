@@ -73,7 +73,7 @@ export class CommuteScene extends Phaser.Scene {
     this.road.getContainer().setX(-(this.viewLeft * this.laneW));
 
     const playerScreenX = this.laneScreenX(startLane);
-    this.player = new Player(this, this.laneW, playerScreenX, height - 200 - this.tileH / 3, startLane);
+    this.player = new Player(this, this.laneW, playerScreenX, height - 200 - this.tileH / 2, startLane);
 
     this.hud = new HUD(this, () => this.onDeath());
     this.hud.create(width);
@@ -244,7 +244,7 @@ export class CommuteScene extends Phaser.Scene {
     const { height } = this.scale;
     const row = this.road.rows[this.currentRowIdx];
     const screenY = height * 0.5;
-    const playerOffsetY = this.tileH / 3; // 타일 높이의 1/3 위로
+    const playerOffsetY = this.tileH / 2; // 타일 높이의 1/3 위로
     const targetContainerY = -(row.y - screenY);
 
     this.tweens.add({
