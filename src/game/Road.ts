@@ -1,29 +1,28 @@
 import Phaser from 'phaser';
 import type { RoadRow, RoadType, LanePositions } from './constants';
-import {
-  OBSTACLE_SIZE_RATIO,
-} from './constants';
+import { OBSTACLE_SIZE_RATIO } from './constants';
 
 const OBSTACLE_KEYS = ['building1', 'building2', 'building3', 'building4', 'building5', 'building6'];
 const EMPTY = '__empty__';
+const LANES: RoadType[] = ['top', 'mid', 'bottom'];
 
 export class Road {
   private scene: Phaser.Scene;
   private container: Phaser.GameObjects.Container;
-  private laneX: LanePositions;
-  private laneW: number;
-  private tileH: number;
+  private laneY: LanePositions;
+  private laneH: number;
+  private tileW: number;
 
   rows: RoadRow[] = [];
-  startY = 0;
+  startX = 0;
   private straightRemaining = 0;
   private recentObstacles: string[] = [];
 
-  constructor(scene: Phaser.Scene, laneX: LanePositions, laneW: number, tileH: number) {
+  constructor(scene: Phaser.Scene, laneY: LanePositions, laneH: number, tileW: number) {
     this.scene = scene;
-    this.laneX = laneX;
-    this.laneW = laneW;
-    this.tileH = tileH;
+    this.laneY = laneY;
+    this.laneH = laneH;
+    this.tileW = tileW;
     this.container = scene.add.container(0, 0).setDepth(5);
   }
 
@@ -31,10 +30,10 @@ export class Road {
     return this.container;
   }
 
-  generateInitial(height: number) {
-    this.startY = height - 200;
+  generateInitial(playerScreenX: number) {
+    this.startX = playerScreenX;
     this.straightRemaining = 1;
-    this.addRow('left', this.startY);
+    this.addRow('mid', this.startX);
 
     for (let i = 0; i < 25; i++) {
       this.addNextRow();
@@ -43,57 +42,61 @@ export class Road {
 
   addNextRow() {
     const last = this.rows[this.rows.length - 1];
-    const nextY = last.y - this.tileH;
+    const nextX = last.x + this.tileW;
     const nextType = this.pickNextRoadType(last.type);
-    this.addRow(nextType, nextY);
+    this.addRow(nextType, nextX);
   }
 
   cleanupOldRows(currentRowIdx: number): number {
     while (currentRowIdx > 10) {
       const old = this.rows.shift()!;
-      old.leftTile?.destroy();
-      old.rightTile?.destroy();
+      old.tiles.forEach(t => t.destroy());
       old.decoration?.destroy();
       currentRowIdx--;
     }
     return currentRowIdx;
   }
 
-  private addRow(type: RoadType, y: number) {
+  private addRow(type: RoadType, x: number) {
     const prev = this.rows.length > 0 ? this.rows[this.rows.length - 1] : null;
     const isTurn = prev !== null && prev.type !== type;
-    const row: RoadRow = { type, y, isTurn };
+    const row: RoadRow = { type, x, isTurn, tiles: [] };
 
-    // 양쪽 모두 bg-tile 먼저 깔기
-    const bgLeft = this.createTile(this.laneX.left, y, 'tile-bg');
-    const bgRight = this.createTile(this.laneX.right, y, 'tile-bg');
-    this.container.add(bgLeft);
-    this.container.add(bgRight);
-
-    if (isTurn) {
-      if (prev!.type === 'left' && type === 'right') {
-        row.leftTile = this.createTile(this.laneX.left, y, 'tile-corner-tl');
-        row.rightTile = this.createTile(this.laneX.right, y, 'tile-corner-br');
-      } else {
-        row.leftTile = this.createTile(this.laneX.left, y, 'tile-corner-bl');
-        row.rightTile = this.createTile(this.laneX.right, y, 'tile-corner-tr');
-      }
-      this.container.add(row.leftTile);
-      this.container.add(row.rightTile);
-    } else if (type === 'left') {
-      row.leftTile = this.createTile(this.laneX.left, y, 'tile-straight');
-      this.container.add(row.leftTile);
-    } else {
-      row.rightTile = this.createTile(this.laneX.right, y, 'tile-straight', true);
-      this.container.add(row.rightTile);
+    // bg-tiles on all 3 lanes first
+    for (const lane of LANES) {
+      const bg = this.createTile(x, this.laneY[lane], 'tile-bg');
+      row.tiles.push(bg);
+      this.container.add(bg);
     }
 
+    if (isTurn) {
+      const prevLane = prev!.type;
+      const goingDown = LANES.indexOf(type) > LANES.indexOf(prevLane);
+
+      // Departing lane: LEFT→BOTTOM (corner-tr) or LEFT→TOP (corner-br)
+      const departKey = goingDown ? 'tile-corner-tr' : 'tile-corner-br';
+      const dept = this.createTile(x, this.laneY[prevLane], departKey);
+      row.tiles.push(dept);
+      this.container.add(dept);
+
+      // Arriving lane: TOP→RIGHT (corner-bl) or BOTTOM→RIGHT (corner-tl)
+      const arriveKey = goingDown ? 'tile-corner-bl' : 'tile-corner-tl';
+      const arr = this.createTile(x, this.laneY[type], arriveKey);
+      row.tiles.push(arr);
+      this.container.add(arr);
+    } else {
+      // Straight road on active lane
+      const road = this.createTile(x, this.laneY[type], 'tile-straight');
+      row.tiles.push(road);
+      this.container.add(road);
+    }
+
+    // Obstacles on non-road lanes (not on turns)
     if (!isTurn) {
-      // 최근 2개 제외한 장애물 후보 (항상 적용)
+      const nonRoadLanes = LANES.filter(l => l !== type);
       const candidates = OBSTACLE_KEYS.filter(k => !this.recentObstacles.includes(k));
 
       if (this.straightRemaining >= 1 && !this.recentObstacles.includes(EMPTY)) {
-        // 직선 2칸+ → 빈칸 허용 (2배 가중치)
         candidates.push(EMPTY, EMPTY);
       }
 
@@ -101,7 +104,8 @@ export class Road {
       if (pick === EMPTY) {
         this.recentObstacles.push(EMPTY);
       } else {
-        this.placeObstacleWithKey(row, type, y, pick);
+        const obstacleLane = nonRoadLanes[Math.floor(Math.random() * nonRoadLanes.length)];
+        this.placeObstacle(row, obstacleLane, x, pick);
         this.recentObstacles.push(pick);
       }
       if (this.recentObstacles.length > 2) this.recentObstacles.shift();
@@ -110,17 +114,15 @@ export class Road {
     this.rows.push(row);
   }
 
-  private createTile(x: number, y: number, key: string, flipX = false): Phaser.GameObjects.Image {
+  private createTile(x: number, y: number, key: string): Phaser.GameObjects.Image {
     return this.scene.add.image(x, y, key)
-      .setDisplaySize(this.laneW, this.tileH)
-      .setOrigin(0.5, 0.5)
-      .setFlipX(flipX);
+      .setDisplaySize(this.tileW, this.laneH)
+      .setOrigin(0.5, 0.5);
   }
 
-  private placeObstacleWithKey(row: RoadRow, type: RoadType, y: number, key: string) {
-    const emptyX = type === 'left' ? this.laneX.right : this.laneX.left;
-    const size = this.laneW * OBSTACLE_SIZE_RATIO;
-    const obstacle = this.scene.add.image(emptyX, y, key)
+  private placeObstacle(row: RoadRow, lane: RoadType, x: number, key: string) {
+    const size = this.laneH * OBSTACLE_SIZE_RATIO;
+    const obstacle = this.scene.add.image(x, this.laneY[lane], key)
       .setDisplaySize(size, size)
       .setOrigin(0.5, 0.5)
       .setDepth(6);
@@ -136,6 +138,9 @@ export class Road {
       return prevType;
     }
     this.straightRemaining = Math.floor(Math.random() * 3);
-    return prevType === 'left' ? 'right' : 'left';
+    const idx = LANES.indexOf(prevType);
+    if (idx === 0) return 'mid';       // top → mid only
+    if (idx === 2) return 'mid';       // bottom → mid only
+    return Math.random() < 0.5 ? 'top' : 'bottom'; // mid → top or bottom
   }
 }

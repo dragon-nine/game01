@@ -27,9 +27,10 @@ export class CommuteScene extends Phaser.Scene {
   private hasRevived = false;
   private bgm?: Phaser.Sound.BaseSound;
 
-  private laneX = { left: 0, right: 0 };
-  private laneW = 0;
-  private tileH = 0;
+  private laneY = { top: 0, mid: 0, bottom: 0 };
+  private laneH = 0;
+  private tileW = 0;
+  private playerScreenX = 0;
   private padding = 0;
   private gridGfx!: Phaser.GameObjects.Graphics;
 
@@ -54,20 +55,24 @@ export class CommuteScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#000000');
 
     this.padding = PADDING;
-    const roadW = width - this.padding * 2;
-    this.laneW = roadW / 2;
-    this.tileH = this.laneW;
-    this.laneX = {
-      left: this.padding + this.laneW / 2,
-      right: this.padding + this.laneW + this.laneW / 2,
+    this.laneH = Math.floor(width / 5);
+    this.tileW = this.laneH;
+
+    const roadCenterY = height * 0.38;
+    this.laneY = {
+      top: roadCenterY - this.laneH,
+      mid: roadCenterY,
+      bottom: roadCenterY + this.laneH,
     };
+
+    this.playerScreenX = width * 0.25;
 
     this.gridGfx = this.add.graphics().setDepth(10);
 
-    this.road = new Road(this, this.laneX, this.laneW, this.tileH);
-    this.road.generateInitial(height);
+    this.road = new Road(this, this.laneY, this.laneH, this.tileW);
+    this.road.generateInitial(this.playerScreenX);
 
-    this.player = new Player(this, this.laneX, this.laneW, height - 200);
+    this.player = new Player(this, this.laneY, this.laneH, this.playerScreenX);
 
     this.hud = new HUD(this, () => this.onDeath());
     this.hud.create(width);
@@ -85,30 +90,31 @@ export class CommuteScene extends Phaser.Scene {
 
   /* ── Grid ── */
 
-  private drawGrid(w: number, h: number) {
+  private drawGrid(w: number, _h: number) {
     this.gridGfx.clear();
     this.gridGfx.lineStyle(2, 0xffffff, 0.3);
 
-    const p = this.padding;
-    for (let x = p; x <= w; x += this.laneW) {
-      this.gridGfx.lineBetween(Math.round(x), 0, Math.round(x), h);
-    }
-    for (let x = p - this.laneW; x >= 0; x -= this.laneW) {
-      this.gridGfx.lineBetween(Math.round(x), 0, Math.round(x), h);
+    // Horizontal lane dividers
+    const topEdge = this.laneY.top - this.laneH / 2;
+    for (let i = 0; i <= 3; i++) {
+      const y = topEdge + i * this.laneH;
+      this.gridGfx.lineBetween(0, Math.round(y), w, Math.round(y));
     }
 
-    const containerY = this.road.getContainer().y;
-    const tileTopBase = this.road.startY - this.tileH / 2 + containerY;
-    const offsetY = ((tileTopBase % this.tileH) + this.tileH) % this.tileH;
-    for (let y = offsetY; y <= h + this.tileH; y += this.tileH) {
-      this.gridGfx.lineBetween(0, Math.round(y), w, Math.round(y));
+    // Vertical column dividers
+    const containerX = this.road.getContainer().x;
+    const tileLeftBase = this.road.startX - this.tileW / 2 + containerX;
+    const offsetX = ((tileLeftBase % this.tileW) + this.tileW) % this.tileW;
+    const bottomEdge = topEdge + 3 * this.laneH;
+    for (let x = offsetX; x <= w + this.tileW; x += this.tileW) {
+      this.gridGfx.lineBetween(Math.round(x), Math.round(topEdge), Math.round(x), Math.round(bottomEdge));
     }
   }
 
   /* ── Buttons ── */
 
   private createButtons(width: number, height: number) {
-    const btnSize = this.laneW * 0.85; // 타일 크기 비례
+    const btnSize = this.laneH * 0.85;
     const btnY = height - BTN_BOTTOM_OFFSET;
     const pressSize = btnSize * BTN_PRESS_SCALE;
 
@@ -167,22 +173,23 @@ export class CommuteScene extends Phaser.Scene {
   /* ── Movement ── */
 
   private switchLane() {
-    const opposite: Lane = this.player.currentLane === 'left' ? 'right' : 'left';
     const currentRow = this.road.rows[this.currentRowIdx];
     const canSwitch = !this.justSwitched && currentRow?.isTurn;
 
     if (!canSwitch) {
       this.isFalling = true;
       this.playSfx('sfx-crash', 0.7);
-      this.player.animateCrashSwitch(opposite, () => this.onCrash());
+      const direction: 'up' | 'down' = this.player.currentLane === 'bottom' ? 'up' : 'down';
+      this.player.animateCrashSwitch(direction, () => this.onCrash());
       return;
     }
 
+    const targetLane = currentRow.type;
     this.playSfx('sfx-switch', 0.5);
-    this.player.switchTo(opposite);
+    this.player.switchTo(targetLane);
     this.justSwitched = true;
     this.hud.addTime();
-    this.player.animateSwitch(opposite);
+    this.player.animateSwitch(targetLane);
   }
 
   private moveForward() {
@@ -215,7 +222,7 @@ export class CommuteScene extends Phaser.Scene {
       this.road.addNextRow();
     }
 
-    this.player.animateForward(() => this.scrollToCurrentRow());
+    this.player.animateForward(() => this.scrollToCurrentColumn());
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       this.playSfx('sfx-combo', 0.7);
@@ -225,19 +232,17 @@ export class CommuteScene extends Phaser.Scene {
     this.currentRowIdx = this.road.cleanupOldRows(this.currentRowIdx);
   }
 
-  private scrollToCurrentRow() {
-    const { height } = this.scale;
+  private scrollToCurrentColumn() {
     const row = this.road.rows[this.currentRowIdx];
-    const screenY = height * 0.5;
-    const targetContainerY = -(row.y - screenY);
+    const targetContainerX = -(row.x - this.playerScreenX);
 
     this.tweens.add({
       targets: this.road.getContainer(),
-      y: targetContainerY,
+      x: targetContainerX,
       duration: 100, ease: 'Quad.easeOut',
     });
 
-    this.player.scrollTo(screenY);
+    this.player.scrollTo(this.playerScreenX);
   }
 
   /* ── Crash ── */
@@ -306,16 +311,11 @@ export class CommuteScene extends Phaser.Scene {
 
   /* ── Ad System ── */
 
-  /**
-   * 광고 표시: 실제 SDK → 실패 시 자체광고 fallback
-   * 실제 광고 SDK 연동 시 tryShowRealAd()만 수정하면 됨
-   */
   private showAd(
     reviveItems: Phaser.GameObjects.GameObject[],
     overlay: Phaser.GameObjects.Rectangle,
     onComplete: () => void,
   ) {
-    // 부활 UI 숨기기
     reviveItems.forEach(item => {
       if (item !== overlay && 'setVisible' in item) {
         (item as Phaser.GameObjects.Components.Visible & Phaser.GameObjects.GameObject).setVisible(false);
@@ -328,7 +328,6 @@ export class CommuteScene extends Phaser.Scene {
       onComplete();
     };
 
-    // 실제 광고 시도 → 실패 시 자체광고
     const adLoaded = this.tryShowRealAd(cleanup);
     if (!adLoaded) {
       logEvent('ad_fallback_house');
@@ -336,62 +335,38 @@ export class CommuteScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * 실제 광고 SDK 연동 포인트
-   * 광고 로드 성공 시 true 반환, 실패 시 false 반환
-   * TODO: 실제 SDK 연동 시 이 메서드만 수정
-   */
   private tryShowRealAd(_onComplete: () => void): boolean {
-    // 실제 광고 SDK 연동 예시:
-    // try {
-    //   AdSDK.showRewarded({
-    //     onComplete: () => {
-    //       eventLog({ log_name: 'ad_real_complete', log_type: 'event', params: {} });
-    //       onComplete();
-    //     },
-    //     onFail: () => { /* fallback은 showAd에서 처리 */ }
-    //   });
-    //   return true;
-    // } catch { return false; }
-
-    return false; // 현재는 항상 자체광고로 fallback
+    return false;
   }
 
-  /** 자체 광고 (홈화면 추가 가이드) */
   private showHouseAd(onComplete: () => void) {
     const { width, height } = this.scale;
     const adItems: Phaser.GameObjects.GameObject[] = [];
 
-    // 배경
     const adBg = this.add.rectangle(width / 2, height / 2, width, height, 0x0a0a1e)
       .setDepth(450);
     adItems.push(adBg);
 
-    // 상단 라벨
     adItems.push(this.add.text(width / 2, height * 0.05, 'AD', {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '12px', color: '#666688',
     }).setOrigin(0.5).setDepth(451));
 
-    // 앱 아이콘
     const iconBg = this.add.circle(width / 2, height * 0.15, 40, 0xe94560).setDepth(451);
     adItems.push(iconBg);
     adItems.push(this.add.text(width / 2, height * 0.15, 'D9', {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(452));
 
-    // 로고 펄스
     this.tweens.add({
       targets: iconBg, scale: 1.08, duration: 800,
       yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
 
-    // 타이틀
     adItems.push(this.add.text(width / 2, height * 0.25, '직장인 잔혹사를\n홈 화면에 추가해보세요!', {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
       align: 'center', lineSpacing: 8,
     }).setOrigin(0.5).setDepth(451));
 
-    // 스텝 가이드
     const stepY = height * 0.38;
     const stepGap = height * 0.08;
     const leftX = 36;
@@ -407,12 +382,10 @@ export class CommuteScene extends Phaser.Scene {
     adItems.push(this.add.text(leftX, stepY + stepGap * 2, '3', numStyle).setDepth(451));
     adItems.push(this.add.text(leftX + 30, stepY + stepGap * 2, '⊕ 홈 화면에 추가  를 선택하세요', stepStyle).setDepth(451));
 
-    // 장점
     adItems.push(this.add.text(width / 2, height * 0.66, '앱처럼 바로 실행할 수 있어요!', {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '14px', color: '#8888aa',
     }).setOrigin(0.5).setDepth(451));
 
-    // 카운트다운
     let countdown = 3;
     const countText = this.add.text(width / 2, height * 0.78, `${countdown}`, {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
@@ -424,7 +397,6 @@ export class CommuteScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(451);
     adItems.push(countLabel);
 
-    // 하단
     adItems.push(this.add.text(width / 2, height * 0.93, 'DragonNine Studio', {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '11px', color: '#444466',
     }).setOrigin(0.5).setDepth(451));
@@ -459,7 +431,7 @@ export class CommuteScene extends Phaser.Scene {
     this.player.setHurt(false);
 
     this.hud.timeLeft = START_TIME;
-    this.hud.elapsed = 30; // 보너스 0.3초부터 재시작
+    this.hud.elapsed = 30;
     this.hud.updateTimerBar();
     this.hud.startTimer();
 

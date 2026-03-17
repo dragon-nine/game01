@@ -5,16 +5,16 @@ import { RABBIT_SIZE_RATIO } from './constants';
 export class Player {
   private scene: Phaser.Scene;
   private sprite: Phaser.GameObjects.Image;
-  private laneX: LanePositions;
+  private laneY: LanePositions;
   private rabbitSize: number;
-  currentLane: Lane = 'left';
+  currentLane: Lane = 'mid';
 
-  constructor(scene: Phaser.Scene, laneX: LanePositions, laneW: number, startY: number) {
+  constructor(scene: Phaser.Scene, laneY: LanePositions, laneH: number, startX: number) {
     this.scene = scene;
-    this.laneX = laneX;
+    this.laneY = laneY;
 
-    this.rabbitSize = laneW * RABBIT_SIZE_RATIO;
-    this.sprite = scene.add.image(laneX.left, startY, 'rabbit-front')
+    this.rabbitSize = laneH * RABBIT_SIZE_RATIO;
+    this.sprite = scene.add.image(startX, laneY.mid, 'rabbit-front')
       .setDisplaySize(this.rabbitSize, this.rabbitSize)
       .setOrigin(0.5, 0.5)
       .setDepth(150);
@@ -31,69 +31,62 @@ export class Player {
     this.currentLane = lane;
   }
 
-  /** 텍스처를 옆면으로 전환 (오른쪽이 기본, 왼쪽은 flipX) */
-  private setSideTexture(targetLane: Lane) {
+  /** 옆면(오른쪽 향함) 텍스처 */
+  private setSideTexture() {
     this.sprite.setTexture('rabbit-side');
-    this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
-    this.sprite.setFlipX(targetLane === 'left');
-  }
-
-  /** 텍스처를 뒷면으로 전환 */
-  private setBackTexture() {
-    this.sprite.setTexture('rabbit-back');
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
   }
 
-  /** 전환 실패: 옆면 → 부딪힘 → onDone */
-  animateCrashSwitch(targetLane: Lane, onDone: () => void) {
-    this.setSideTexture(targetLane);
+  /** 전환 실패: 위/아래로 부딪힘 → onDone */
+  animateCrashSwitch(direction: 'up' | 'down', onDone: () => void) {
+    this.setSideTexture();
     this.sprite.setAngle(0);
-    const bumpX = this.sprite.x + (targetLane === 'right' ? 30 : -30);
+    const bumpY = this.sprite.y + (direction === 'up' ? -30 : 30);
     this.scene.tweens.add({
-      targets: this.sprite, x: bumpX,
+      targets: this.sprite, y: bumpY,
       duration: 80, ease: 'Quad.easeOut',
       onComplete: onDone,
     });
   }
 
-  /** 전환 성공: 옆면 → 이동 */
+  /** 전환 성공: 타겟 레인으로 이동 */
   animateSwitch(targetLane: Lane) {
-    this.setSideTexture(targetLane);
+    this.setSideTexture();
     this.sprite.setAngle(0);
     this.scene.tweens.add({
       targets: this.sprite,
-      x: this.laneX[targetLane],
+      y: this.laneY[targetLane],
       duration: 120, ease: 'Quad.easeOut',
     });
   }
 
-  /** 전진 충돌: 위로 튕김 → onDone */
+  /** 전진 충돌: 오른쪽으로 튕김 → onDone */
   animateForwardCrash(onDone: () => void) {
-    this.setBackTexture();
-    const originY = this.sprite.y;
+    this.setSideTexture();
+    const originX = this.sprite.x;
     this.scene.tweens.add({
       targets: this.sprite,
-      y: originY - 25,
+      x: originX + 25,
       duration: 100, ease: 'Quad.easeOut',
       yoyo: true,
       onComplete: onDone,
     });
   }
 
-  /** 전진 성공: 뒷면 → scrollTo */
-  animateForward(onAngleReset: () => void) {
-    this.setBackTexture();
+  /** 전진 성공: 옆면 텍스처 → 스크롤 */
+  animateForward(onDone: () => void) {
+    this.setSideTexture();
     this.sprite.setAngle(0);
-    onAngleReset();
+    onDone();
   }
 
   /** 스크롤 후 위치 맞추기 */
-  scrollTo(screenY: number) {
+  scrollTo(screenX: number) {
     this.scene.tweens.add({
       targets: this.sprite,
-      x: this.laneX[this.currentLane],
-      y: screenY,
+      x: screenX,
+      y: this.laneY[this.currentLane],
       duration: 100, ease: 'Quad.easeOut',
     });
   }
