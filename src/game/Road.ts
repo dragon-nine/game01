@@ -69,9 +69,11 @@ export class Road {
     const isTurn = prev !== null && prev.type !== type;
     const row: RoadRow = { type, y, isTurn, tiles: [] };
 
-    // bg-tiles on all lanes
-    for (let i = 0; i < this.numLanes; i++) {
-      const bg = this.createTile(this.laneWorldX[i], y, 'tile-bg');
+    // bg-tiles on all lanes + 양옆 여백 커버
+    const leftSideX = this.laneWorldX[0] - this.laneW;
+    const rightSideX = this.laneWorldX[this.numLanes - 1] + this.laneW;
+    for (const x of [leftSideX, ...this.laneWorldX, rightSideX]) {
+      const bg = this.createTile(x, y, 'tile-bg');
       row.tiles.push(bg);
       this.container.add(bg);
     }

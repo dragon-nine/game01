@@ -63,9 +63,9 @@ export class CommuteScene extends Phaser.Scene {
       this.laneWorldX.push(PADDING + this.laneW / 2 + i * this.laneW);
     }
 
-    // 시작 레인 = 가운데 (2), 뷰는 레인 2-3 표시
-    const startLane = Math.floor(NUM_LANES / 2);
-    this.viewLeft = startLane;
+    // 시작 레인 = 왼쪽 (0)
+    const startLane = 0;
+    this.viewLeft = 0;
 
     this.gridGfx = this.add.graphics().setDepth(10);
 

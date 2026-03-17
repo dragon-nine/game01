@@ -1,5 +1,5 @@
 // ── Game constants ──
-export const NUM_LANES = 5;                // 전체 레인 수
+export const NUM_LANES = 2;                // 전체 레인 수
 export const VISIBLE_LANES = 2;            // 화면에 보이는 레인 수
 export const MAX_TIME = 5;                 // 최대 시간 (초)
 export const START_TIME = 5;               // 시작 시간 (초)
