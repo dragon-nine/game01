@@ -128,10 +128,12 @@ export class Player {
       this.sprite.setAngle(0);
 
       // 살짝 커졌다가 (으악!) → 쏙 빨려들어감
+      const curScaleX = this.sprite.scaleX;
+      const curScaleY = this.sprite.scaleY;
       this.scene.tweens.add({
         targets: this.sprite,
-        scaleX: 1.1,
-        scaleY: 1.1,
+        scaleX: curScaleX * 1.15,
+        scaleY: curScaleY * 1.15,
         duration: 80,
         ease: 'Quad.easeOut',
         onComplete: () => {
