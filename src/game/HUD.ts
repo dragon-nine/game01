@@ -108,15 +108,6 @@ export class HUD {
     this.scene.time.delayedCall(80, () => {
       this.gaugeFull.clearTint();
     });
-
-    // 스케일 펄스
-    this.scene.tweens.killTweensOf(this.gaugeFull);
-    this.gaugeFull.setScale(1.05, 1.15);
-    this.scene.tweens.add({
-      targets: this.gaugeFull,
-      scaleX: 1, scaleY: 1,
-      duration: 150, ease: 'Quad.easeOut',
-    });
   }
 
   /** 타이머 시작 (첫 액션 시 호출) */
