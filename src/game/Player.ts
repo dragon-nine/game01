@@ -130,8 +130,8 @@ export class Player {
       // 살짝 커졌다가 (으악!) → 쏙 빨려들어감
       this.scene.tweens.add({
         targets: this.sprite,
-        scaleX: 1.3,
-        scaleY: 1.3,
+        scaleX: 1.1,
+        scaleY: 1.1,
         duration: 80,
         ease: 'Quad.easeOut',
         onComplete: () => {
