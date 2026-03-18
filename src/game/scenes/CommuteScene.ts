@@ -441,6 +441,7 @@ export class CommuteScene extends Phaser.Scene {
     this.comboCount = 0;
 
     this.player.setHurt(false);
+    this.player.resetSprite();
 
     this.hud.timeLeft = START_TIME;
     this.hud.elapsed = 30;
