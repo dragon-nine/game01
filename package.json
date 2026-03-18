@@ -17,6 +17,7 @@
     "@apps-in-toss/web-framework": "^2.0.5",
     "@capacitor/android": "^8.2.0",
     "@capacitor/core": "^8.2.0",
+    "@capacitor/haptics": "^8.0.1",
     "phaser": "^3.90.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
