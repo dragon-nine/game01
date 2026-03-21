@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { getLocalAssetUrl } from '../local-assets'
+import { listBlobs } from '../api'
+import type { BlobItem } from '../types'
 
 const ROAD_TILES = [
   { key: 'straight', label: '직선 도로' },
@@ -28,19 +30,47 @@ const UPLOAD_SLOTS = [
   { key: 'rabbit-side', label: '캐릭터 옆면', category: 'character' },
 ]
 
-function defaultUrl(key: string): string {
+function localUrl(key: string): string {
   if (key.startsWith('rabbit')) return getLocalAssetUrl(`character/${key}.png`)
   return getLocalAssetUrl(`map/${key}.png`)
 }
 
-export default function AssetPreviewTab({ gameId: _gameId }: { gameId: string }) {
+export default function AssetPreviewTab({ gameId }: { gameId: string }) {
   const [offsetY, setOffsetY] = useState(0)
   const [charScale, setCharScale] = useState(120)
   const [showGuides, setShowGuides] = useState(true)
   const [charDir, setCharDir] = useState('rabbit-front')
   const [overrides, setOverrides] = useState<Record<string, string>>({})
+  const [blobUrls, setBlobUrls] = useState<Record<string, string>>({})
+  const [loaded, setLoaded] = useState(false)
 
-  const getUrl = (key: string) => overrides[key] || defaultUrl(key)
+  // Blob에서 character/ + map/ 에셋 URL을 가져옴
+  const loadBlobUrls = useCallback(async () => {
+    const urls: Record<string, string> = {}
+    try {
+      const [chars, maps] = await Promise.all([
+        listBlobs(`${gameId}/character/`),
+        listBlobs(`${gameId}/map/`),
+      ])
+      const all: BlobItem[] = [...chars, ...maps]
+      for (const b of all) {
+        const filename = b.pathname.split('/').pop()?.replace('.png', '') || ''
+        urls[filename] = b.url
+      }
+    } catch {
+      // local dev — blob API 없음
+    }
+    setBlobUrls(urls)
+    setLoaded(true)
+  }, [gameId])
+
+  useEffect(() => { loadBlobUrls() }, [loadBlobUrls])
+
+  const getUrl = (key: string) => {
+    if (overrides[key]) return overrides[key]
+    if (blobUrls[key]) return blobUrls[key]
+    return localUrl(key) // fallback for local dev
+  }
 
   const handleFileChange = (key: string, file: File | null) => {
     if (!file) return
@@ -82,7 +112,9 @@ export default function AssetPreviewTab({ gameId: _gameId }: { gameId: string })
       </div>
     )
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offsetY, scale, showGuides, charDir, overrides])
+  }, [offsetY, scale, showGuides, charDir, overrides, blobUrls])
+
+  if (!loaded) return <div className="loading">로딩 중...</div>
 
   return (
     <div>
@@ -171,7 +203,6 @@ export default function AssetPreviewTab({ gameId: _gameId }: { gameId: string })
       <div className="card" style={{ background: '#0d0d1a' }}>
         <div className="card-title" style={{ color: 'var(--game-accent)' }}>3칸 연속 도로</div>
         <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {/* Straight 3-tile */}
           <div className="preview-tile-card">
             <h3>직선 도로 3칸</h3>
             <div className="preview-tile-box" style={{ height: 360 }}>
@@ -189,7 +220,6 @@ export default function AssetPreviewTab({ gameId: _gameId }: { gameId: string })
               />
             </div>
           </div>
-          {/* Corner transition */}
           <div className="preview-tile-card">
             <h3>코너 전환 (좌→우)</h3>
             <div className="preview-tile-box" style={{ height: 360 }}>
