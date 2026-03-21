@@ -4,7 +4,13 @@
   "version": "1.0.0",
   "scripts": {
     "build": "npm run build --prefix games/game01",
-    "build:all": "npm run build --prefix games/game01",
-    "dev:game01": "npm run dev --prefix games/game01"
+    "build:all": "npm run build:admin && npm run build --prefix games/game01",
+    "build:admin": "cd admin && npm install && npm run build",
+    "sync-assets": "node scripts/sync-game-assets.mjs",
+    "dev:game01": "npm run dev --prefix games/game01",
+    "dev:admin": "npm run dev --prefix admin"
+  },
+  "dependencies": {
+    "@vercel/blob": "^1.0.0"
   }
 }

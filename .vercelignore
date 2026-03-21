@@ -6,3 +6,5 @@ build-tools
 licenses
 platforms
 dist
+games/game01/node_modules
+admin/node_modules
