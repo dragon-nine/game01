@@ -1,16 +1,12 @@
 import { list } from '@vercel/blob';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const prefix = (req.query.prefix as string) || '';
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const prefix = searchParams.get('prefix') || '';
 
   try {
     const result = await list({ prefix, token: process.env.BLOB_READ_WRITE_TOKEN });
-    res.json({
+    return Response.json({
       blobs: result.blobs.map((b) => ({
         url: b.url,
         pathname: b.pathname,
@@ -19,6 +15,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })),
     });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    return Response.json({ error: (err as Error).message }, { status: 500 });
   }
 }
