@@ -94,6 +94,7 @@ function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props[
   const addRef = useRef<HTMLInputElement>(null)
   const [blobs, setBlobs] = useState<BlobItem[]>([])
   const [collapsed, setCollapsed] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const [apiAvailable, setApiAvailable] = useState(false)
   const localAssets = getLocalAssetsByCategory(cat.key)
 
@@ -104,6 +105,8 @@ function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props[
       setApiAvailable(true)
     } catch {
       // API not available (local dev)
+    } finally {
+      setLoaded(true)
     }
   }, [cat.prefix])
 
@@ -160,7 +163,17 @@ function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props[
           onChange={(e) => { if (e.target.files) handleUpload(Array.from(e.target.files)); e.target.value = '' }}
         />
       </div>
-      {!collapsed && (
+      {!collapsed && !loaded && (
+        <div className="asset-grid">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="asset-card">
+              <div className="asset-card-preview"><div className="img-placeholder" style={{ width: '100%', height: '100%' }} /></div>
+              <div className="asset-card-info"><div className="img-placeholder" style={{ width: '60%', height: 12, borderRadius: 4 }} /></div>
+            </div>
+          ))}
+        </div>
+      )}
+      {!collapsed && loaded && (
         <div className="asset-grid">
           {visibleLocal.map((a) => (
             <LocalAssetCard
