@@ -94,45 +94,47 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
 
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">D9</div>
-        <span>Dragon Nine</span>
-      </div>
-
-      <button
-        className={`sidebar-item${activePage === 'shared-files' ? ' active' : ''}`}
-        onClick={() => onPageChange('shared-files' as PageId)}
-      >
-        <span>📁</span>
-        <span>공유 파일</span>
-      </button>
-
-      {GAMES.map((game) => (
-        <div key={game.key} className="sidebar-game-group">
-          <button className="sidebar-section-btn" onClick={() => toggle(game.key)}>
-            <span className={`sidebar-chevron${collapsed[game.key] ? '' : ' open'}`}>&#9656;</span>
-            <span>{game.title}</span>
-          </button>
-          {!collapsed[game.key] && (
-            <>
-              {game.items.map((item) => (
-                <button
-                  key={item.id}
-                  className={`sidebar-item${activePage === item.id ? ' active' : ''}`}
-                  onClick={() => onPageChange(item.id)}
-                >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-              <a className="sidebar-item sidebar-link" href={game.gameUrl} target="_blank" rel="noopener">
-                <span>🎮</span>
-                <span>게임으로 이동</span>
-              </a>
-            </>
-          )}
+      <div className="sidebar-nav">
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">D9</div>
+          <span>Dragon Nine</span>
         </div>
-      ))}
+
+        <button
+          className={`sidebar-item${activePage === 'shared-files' ? ' active' : ''}`}
+          onClick={() => onPageChange('shared-files' as PageId)}
+        >
+          <span>📁</span>
+          <span>공유 파일</span>
+        </button>
+
+        {GAMES.map((game) => (
+          <div key={game.key} className="sidebar-game-group">
+            <button className="sidebar-section-btn" onClick={() => toggle(game.key)}>
+              <span className={`sidebar-chevron${collapsed[game.key] ? '' : ' open'}`}>&#9656;</span>
+              <span>{game.title}</span>
+            </button>
+            {!collapsed[game.key] && (
+              <>
+                {game.items.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`sidebar-item${activePage === item.id ? ' active' : ''}`}
+                    onClick={() => onPageChange(item.id)}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+                <a className="sidebar-item sidebar-link" href={game.gameUrl} target="_blank" rel="noopener">
+                  <span>🎮</span>
+                  <span>게임으로 이동</span>
+                </a>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
 
       {buildTime && (
         <div className="sidebar-build-info">

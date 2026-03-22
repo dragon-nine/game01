@@ -52,7 +52,7 @@ body {
   padding: 20px 0;
   overflow-y: auto;
 }
-.sidebar-game-group:last-of-type { flex: 1; }
+.sidebar-nav { flex: 1; }
 .sidebar-build-info {
   padding: 12px 20px; border-top: 1px solid var(--border);
   font-size: 11px; color: var(--text-tertiary);
