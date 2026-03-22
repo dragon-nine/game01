@@ -1033,9 +1033,13 @@ body {
 }
 .le-field-val { font-size: 13px; font-weight: 500; font-family: monospace; }
 .le-field-row { display: flex; align-items: center; gap: 8px; }
-.le-field-row input {
+.le-field-row input[type="number"], .le-field-row input[type="text"] {
   width: 80px; padding: 4px 6px; border: 1px solid var(--border);
   border-radius: 6px; font-size: 13px; font-family: monospace;
+}
+.le-field-row input[type="color"] {
+  width: 32px; height: 28px; padding: 2px; border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; background: none;
 }
 .le-field-px {
   font-size: 11px; color: var(--text-tertiary); font-family: monospace;

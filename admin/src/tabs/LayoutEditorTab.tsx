@@ -8,13 +8,20 @@ const DESIGN_H = 844 // preview reference height
 
 type AnchorCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
+interface TextStyle {
+  fontSizePx?: number
+  color?: string
+  strokeColor?: string
+  strokeWidth?: number
+}
+
 interface GroupElement {
   id: string; positioning: 'group'; type: 'text' | 'image'
-  order: number; gapPx: number; widthPx: number; label?: string; fontSizePx?: number
+  order: number; gapPx: number; widthPx: number; label?: string; textStyle?: TextStyle
 }
 interface AnchorElement {
   id: string; positioning: 'anchor'; type: 'text' | 'image'
-  anchor: AnchorCorner; offsetX: number; offsetY: number; widthPx: number; label?: string; fontSizePx?: number
+  anchor: AnchorCorner; offsetX: number; offsetY: number; widthPx: number; label?: string; textStyle?: TextStyle
 }
 type LayoutElement = GroupElement | AnchorElement
 
@@ -59,7 +66,7 @@ function computePreviewLayout(
       if (el.type === 'image' && imageSizes[el.id]) {
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
       } else {
-        const fontSize = (el.fontSizePx || 14) * scale
+        const fontSize = (el.textStyle?.fontSizePx || 14) * scale
         const lines = (el.label || el.id).split('\n').length
         maxH = Math.max(maxH, fontSize * 1.4 * lines)
       }
@@ -128,15 +135,15 @@ const SCREEN_DEFAULTS: Record<string, LayoutElement[]> = {
   'main-screen': [
     { id: 'main-text', positioning: 'group', type: 'image', order: 0, gapPx: 0, widthPx: 331 },
     { id: 'main-char', positioning: 'group', type: 'image', order: 1, gapPx: 24, widthPx: 175 },
-    { id: 'bestScore', positioning: 'group', type: 'text', order: 2, gapPx: 20, widthPx: 200, label: '최고기록 0', fontSizePx: 22 },
+    { id: 'bestScore', positioning: 'group', type: 'text', order: 2, gapPx: 20, widthPx: 200, label: '최고기록 0', textStyle: { fontSizePx: 22, color: '#ffffff', strokeColor: '#000000', strokeWidth: 4 } },
     { id: 'main-btn', positioning: 'group', type: 'image', order: 3, gapPx: 20, widthPx: 214 },
     { id: 'btn-settings', positioning: 'anchor', type: 'image', anchor: 'top-right', offsetX: 20, offsetY: 20, widthPx: 35 },
   ],
   'game-over': [
-    { id: 'bestText', positioning: 'group', type: 'text', order: 0, gapPx: 0, widthPx: 234, label: '최고기록 0', fontSizePx: 22 },
-    { id: 'scoreText', positioning: 'group', type: 'text', order: 1, gapPx: 12, widthPx: 156, label: '0', fontSizePx: 72 },
+    { id: 'bestText', positioning: 'group', type: 'text', order: 0, gapPx: 0, widthPx: 234, label: '최고기록 0', textStyle: { fontSizePx: 22, color: '#ffffff' } },
+    { id: 'scoreText', positioning: 'group', type: 'text', order: 1, gapPx: 12, widthPx: 156, label: '0', textStyle: { fontSizePx: 72, color: '#ffffff' } },
     { id: 'go-rabbit', positioning: 'group', type: 'image', order: 2, gapPx: 16, widthPx: 175 },
-    { id: 'quoteText', positioning: 'group', type: 'text', order: 3, gapPx: 16, widthPx: 273, label: '퇴근은 쉬운게 아니야...\n인생이 원래 그래', fontSizePx: 18 },
+    { id: 'quoteText', positioning: 'group', type: 'text', order: 3, gapPx: 16, widthPx: 273, label: '퇴근은 쉬운게 아니야...\n인생이 원래 그래', textStyle: { fontSizePx: 18, color: '#ffffff' } },
     { id: 'go-btn-revive', positioning: 'group', type: 'image', order: 4, gapPx: 24, widthPx: 331 },
     { id: 'go-btn-home', positioning: 'group', type: 'image', order: 5, gapPx: 16, widthPx: 331 },
     { id: 'go-btn-challenge', positioning: 'group', type: 'image', order: 6, gapPx: 16, widthPx: 156 },
@@ -440,7 +447,13 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     {el.type === 'image' && assetUrls[el.id] ? (
                       <img src={assetUrls[el.id]} alt={el.id} draggable={false} />
                     ) : (
-                      <div className="le-el-text" style={{ fontSize: `${Math.max(6, (el.fontSizePx || 14) * previewScale)}px` }}>{el.label || el.id}</div>
+                      <div className="le-el-text" style={{
+                        fontSize: `${Math.max(6, (el.textStyle?.fontSizePx || 14) * previewScale)}px`,
+                        color: el.textStyle?.color || '#fff',
+                        WebkitTextStroke: el.textStyle?.strokeWidth
+                          ? `${el.textStyle.strokeWidth * previewScale}px ${el.textStyle.strokeColor || '#000'}`
+                          : undefined,
+                      }}>{el.label || el.id}</div>
                     )}
                     {showGuides && el.positioning === 'group' && el.gapPx > 0 && (
                       <div className="le-el-gap" data-gap={`${el.gapPx}px`}
@@ -543,6 +556,54 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                       <span className="le-field-px">px</span>
                     </div>
                   </div>
+                </>
+              )}
+
+              {selected.type === 'text' && (
+                <>
+                  <h4 style={{ marginTop: 12, marginBottom: 4, fontSize: 12, color: 'var(--text-secondary)' }}>텍스트 스타일</h4>
+                  <div className="le-field">
+                    <label>폰트 크기</label>
+                    <div className="le-field-row">
+                      <input type="number" min={8} max={120} step={1}
+                        value={selected.textStyle?.fontSizePx || 14}
+                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, fontSizePx: parseInt(e.target.value) || 14 } })}
+                      />
+                      <span className="le-field-px">px</span>
+                    </div>
+                  </div>
+                  <div className="le-field">
+                    <label>폰트 색상</label>
+                    <div className="le-field-row">
+                      <input type="color"
+                        value={selected.textStyle?.color || '#ffffff'}
+                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, color: e.target.value } })}
+                      />
+                      <span className="le-field-px">{selected.textStyle?.color || '#ffffff'}</span>
+                    </div>
+                  </div>
+                  <div className="le-field">
+                    <label>테두리 굵기</label>
+                    <div className="le-field-row">
+                      <input type="number" min={0} max={20} step={1}
+                        value={selected.textStyle?.strokeWidth || 0}
+                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, strokeWidth: parseInt(e.target.value) || 0 } })}
+                      />
+                      <span className="le-field-px">px</span>
+                    </div>
+                  </div>
+                  {(selected.textStyle?.strokeWidth || 0) > 0 && (
+                    <div className="le-field">
+                      <label>테두리 색상</label>
+                      <div className="le-field-row">
+                        <input type="color"
+                          value={selected.textStyle?.strokeColor || '#000000'}
+                          onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, strokeColor: e.target.value } })}
+                        />
+                        <span className="le-field-px">{selected.textStyle?.strokeColor || '#000000'}</span>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
