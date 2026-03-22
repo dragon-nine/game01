@@ -151,7 +151,7 @@ export class BootScene extends Phaser.Scene {
 
     // "설정" 타이틀
     ov.addText(width / 2 - panelW * 0.05, barY, '설정', {
-      fontSize: `${Math.round(panelW * 0.08)}px`, color: '#1a1a2e', fontStyle: 'bold',
+      fontSize: `${Math.round(panelW * 0.08)}px`, color: '#ffffff', fontStyle: 'bold',
     });
 
     // X 닫기 버튼 (우상단)
