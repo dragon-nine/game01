@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Overlay } from '../Overlay';
 import { logScreen } from '../services/analytics';
 import { computeLayout } from '../layout-types';
-import { DEFAULT_LAYOUTS } from '../default-layouts';
+import { loadLayout } from '../layout-loader';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -94,27 +94,29 @@ export class BootScene extends Phaser.Scene {
       'main-text': titleImg, 'main-char': charImg, 'bestScore': bestRecord, 'main-btn': btnImg, 'btn-settings': settingsBtn,
     };
 
-    // Compute layout
-    const layout = DEFAULT_LAYOUTS['main-screen'];
-    const positions = computeLayout(
-      layout.elements, width, height,
-      (id) => { const t = this.textures.get(objMap[id]?.texture?.key || id); const f = t.getSourceImage(); return f ? { w: f.width, h: f.height } : null; },
-      (id) => { const obj = objMap[id]; return obj instanceof Phaser.GameObjects.Text ? { w: obj.width, h: obj.height } : null; },
-    );
-
-    // Apply positions
-    for (const pos of positions) {
-      const obj = objMap[pos.id];
-      if (!obj) continue;
-      obj.setPosition(pos.x, pos.y);
-      obj.setOrigin(pos.originX, pos.originY);
-      if (obj instanceof Phaser.GameObjects.Image) {
-        obj.setDisplaySize(pos.displayWidth, pos.displayHeight);
+    // Apply layout (async fetch from blob, fallback to defaults)
+    const applyLayout = (elements: import('../layout-types').LayoutElement[]) => {
+      const positions = computeLayout(
+        elements, width, height,
+        (id) => { const t = this.textures.get(objMap[id]?.texture?.key || id); const f = t.getSourceImage(); return f ? { w: f.width, h: f.height } : null; },
+        (id) => { const obj = objMap[id]; return obj instanceof Phaser.GameObjects.Text ? { w: obj.width, h: obj.height } : null; },
+      );
+      for (const pos of positions) {
+        const obj = objMap[pos.id];
+        if (!obj) continue;
+        obj.setPosition(pos.x, pos.y);
+        obj.setOrigin(pos.originX, pos.originY);
+        if (obj instanceof Phaser.GameObjects.Image) {
+          obj.setDisplaySize(pos.displayWidth, pos.displayHeight);
+        }
       }
-    }
+    };
+
+    // Load & apply (non-blocking — defaults applied first, then blob layout overwrites if available)
+    loadLayout('game01', 'main-screen').then(applyLayout);
 
     // Fade-in animations
-    const btnScale = btnImg.scaleX;
+    const btnScale = btnImg.scaleX || 1;
     this.tweens.add({ targets: titleImg, alpha: 1, y: titleImg.y - height * 0.02, duration: 800, delay: 300, ease: 'Power2' });
     this.tweens.add({ targets: charImg, alpha: 1, y: charImg.y - height * 0.02, duration: 800, delay: 600, ease: 'Power2' });
     this.tweens.add({ targets: bestRecord, alpha: 1, duration: 600, delay: 900, ease: 'Power2' });

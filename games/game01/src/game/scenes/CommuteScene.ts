@@ -11,7 +11,7 @@ import { Overlay } from '../Overlay';
 import { submitScore as submitLeaderboardScore, openLeaderboard } from '../services/leaderboard';
 import { logEvent, logClick, logScreen } from '../services/analytics';
 import { computeLayout } from '../layout-types';
-import { DEFAULT_LAYOUTS } from '../default-layouts';
+import { loadLayout } from '../layout-loader';
 
 export class CommuteScene extends Phaser.Scene {
   private road!: Road;
@@ -557,36 +557,36 @@ export class CommuteScene extends Phaser.Scene {
     };
     if (reviveBtn) objMap['go-btn-revive'] = reviveBtn;
 
-    // Compute layout (exclude revive button if already used)
-    const layout = DEFAULT_LAYOUTS['game-over'];
+    // Compute & apply layout
     const excludeIds = canRevive ? [] : ['go-btn-revive'];
-    const positions = computeLayout(
-      layout.elements, width, height,
-      (id) => {
-        const key = id; // texture key matches element id
-        if (!this.textures.exists(key)) return null;
-        const src = this.textures.get(key).getSourceImage();
-        return { w: src.width, h: src.height };
-      },
-      (id) => {
-        const obj = objMap[id];
-        return obj instanceof Phaser.GameObjects.Text ? { w: obj.width, h: obj.height } : null;
-      },
-      excludeIds,
-    );
-
-    // Apply positions
-    for (const pos of positions) {
-      const obj = objMap[pos.id];
-      if (!obj) continue;
-      if (obj instanceof Phaser.GameObjects.Image) {
-        obj.setPosition(pos.x, pos.y);
-        obj.setDisplaySize(pos.displayWidth, pos.displayHeight);
-        obj.setOrigin(pos.originX, pos.originY);
-      } else if (obj instanceof Phaser.GameObjects.Text) {
-        obj.setPosition(pos.x, pos.y);
+    const applyPositions = (elements: import('../layout-types').LayoutElement[]) => {
+      const positions = computeLayout(
+        elements, width, height,
+        (id) => {
+          if (!this.textures.exists(id)) return null;
+          const src = this.textures.get(id).getSourceImage();
+          return { w: src.width, h: src.height };
+        },
+        (id) => {
+          const obj = objMap[id];
+          return obj instanceof Phaser.GameObjects.Text ? { w: obj.width, h: obj.height } : null;
+        },
+        excludeIds,
+      );
+      for (const pos of positions) {
+        const obj = objMap[pos.id];
+        if (!obj) continue;
+        if (obj instanceof Phaser.GameObjects.Image) {
+          obj.setPosition(pos.x, pos.y);
+          obj.setDisplaySize(pos.displayWidth, pos.displayHeight);
+          obj.setOrigin(pos.originX, pos.originY);
+        } else if (obj instanceof Phaser.GameObjects.Text) {
+          obj.setPosition(pos.x, pos.y);
+        }
       }
-    }
+    };
+
+    loadLayout('game01', 'game-over').then(applyPositions);
 
     // Fade-in: score group first
     this.time.delayedCall(500, () => {
