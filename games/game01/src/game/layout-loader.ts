@@ -1,30 +1,25 @@
-import type { ScreenLayout, LayoutElement } from './layout-types'
+import type { LayoutElement } from './layout-types'
 import { DEFAULT_LAYOUTS } from './default-layouts'
 
-const BLOB_LIST_API = '/api/blob-list'
+const BLOB_BASE = 'https://hhgnhfkftrktusxf.public.blob.vercel-storage.com'
 const layoutCache = new Map<string, LayoutElement[]>()
 
 /**
- * Fetch layout from Vercel Blob, falling back to built-in defaults.
- * Results are cached in memory for the session.
+ * Fetch layout JSON directly from Vercel Blob (public access).
+ * Falls back to built-in defaults if not found.
  */
 export async function loadLayout(gameId: string, screen: string): Promise<LayoutElement[]> {
   const cacheKey = `${gameId}/${screen}`
   if (layoutCache.has(cacheKey)) return layoutCache.get(cacheKey)!
 
   try {
-    const res = await fetch(`${BLOB_LIST_API}?prefix=${encodeURIComponent(`${gameId}/layout/`)}`)
+    const url = `${BLOB_BASE}/${gameId}/layout/${screen}.json`
+    const res = await fetch(url)
     if (res.ok) {
-      const data = await res.json()
-      const blob = data.blobs?.find((b: { pathname: string }) => b.pathname === `${gameId}/layout/${screen}.json`)
-      if (blob?.url) {
-        const layoutRes = await fetch(blob.url)
-        if (layoutRes.ok) {
-          const layout: ScreenLayout = await layoutRes.json()
-          layoutCache.set(cacheKey, layout.elements)
-          return layout.elements
-        }
-      }
+      const layout = await res.json()
+      const elements: LayoutElement[] = layout.elements || []
+      layoutCache.set(cacheKey, elements)
+      return elements
     }
   } catch { /* fallback to defaults */ }
 
