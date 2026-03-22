@@ -129,10 +129,6 @@ export class BootScene extends Phaser.Scene {
       this.showSettings();
     });
 
-    // Credits
-    this.add.text(width / 2, height * 0.92, 'DragonNine Studio', {
-      fontFamily: 'GMarketSans, sans-serif', fontSize: '12px', color: '#ffffff44',
-    }).setOrigin(0.5);
 
   }
 
