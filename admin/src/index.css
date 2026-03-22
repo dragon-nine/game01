@@ -52,6 +52,13 @@ body {
   padding: 20px 0;
   overflow-y: auto;
 }
+.sidebar-game-group:last-of-type { flex: 1; }
+.sidebar-build-info {
+  padding: 12px 20px; border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text-tertiary);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.sidebar-build-date { opacity: 0.6; }
 
 .sidebar-logo {
   padding: 0 20px 20px;

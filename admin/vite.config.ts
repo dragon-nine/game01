@@ -57,6 +57,9 @@ function localMiddlewares(): Plugin {
 export default defineConfig({
   plugins: [react(), localMiddlewares()],
   base: '/admin/',
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   build: {
     outDir: '../dist/admin',
     emptyOutDir: true,

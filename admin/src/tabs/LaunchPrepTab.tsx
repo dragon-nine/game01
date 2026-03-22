@@ -24,6 +24,7 @@ interface AssetGroup {
   storeHeight: number
   prefix: string
   downloads: DownloadOption[]
+  exactOnly?: boolean  // true면 정확한 크기만 허용, 크로퍼 없이 바로 업로드
 }
 
 function buildGroups(gameId: string): AssetGroup[] {
@@ -35,6 +36,7 @@ function buildGroups(gameId: string): AssetGroup[] {
       accept: 'image/png',
       maxCount: 1,
       storeWidth: 600, storeHeight: 600,
+      exactOnly: true,
       prefix: `launch/${gameId}/icon/`,
       downloads: [
         { platform: '토스', width: 600, height: 600, mode: 'resize' },
@@ -48,6 +50,7 @@ function buildGroups(gameId: string): AssetGroup[] {
       accept: 'image/png,image/jpeg',
       maxCount: 1,
       storeWidth: 1932, storeHeight: 828,
+      exactOnly: true,
       prefix: `launch/${gameId}/feature/`,
       downloads: [
         { platform: '토스', width: 1932, height: 828, mode: 'resize' },
@@ -150,8 +153,31 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
       onBanner('error', `최대 ${group.maxCount}개까지`)
       return
     }
-    if (files[0]) setCropFile(files[0])
-  }, [blobs.length, group.maxCount, onBanner])
+    const file = files[0]
+    if (!file) return
+
+    if (group.exactOnly) {
+      // Validate exact dimensions, upload directly without cropper
+      const img = new Image()
+      img.onload = async () => {
+        URL.revokeObjectURL(img.src)
+        if (img.naturalWidth !== group.storeWidth || img.naturalHeight !== group.storeHeight) {
+          onBanner('error', `${group.storeWidth}x${group.storeHeight} 이미지만 업로드 가능합니다 (현재: ${img.naturalWidth}x${img.naturalHeight})`)
+          return
+        }
+        try {
+          await uploadBlob(file, group.prefix)
+          onBanner('success', '업로드 완료')
+          refresh()
+        } catch (err) {
+          onBanner('error', `업로드 실패: ${(err as Error).message}`)
+        }
+      }
+      img.src = URL.createObjectURL(file)
+    } else {
+      setCropFile(file)
+    }
+  }, [blobs.length, group.maxCount, group.exactOnly, group.storeWidth, group.storeHeight, group.prefix, onBanner, refresh])
 
   const handleCropped = useCallback(async (croppedFile: File) => {
     setCropFile(null)

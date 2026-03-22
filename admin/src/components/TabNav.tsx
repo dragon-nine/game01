@@ -1,5 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { PageId } from '../App'
+
+declare const __BUILD_TIME__: string
+
+function formatRelativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return '방금 전'
+  if (mins < 60) return `${mins}분 전`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}시간 전`
+  const days = Math.floor(hours / 24)
+  return `${days}일 전`
+}
+
+function formatDateTime(isoString: string): string {
+  const d = new Date(isoString)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  return `${mm}.${dd} ${hh}:${mi}`
+}
 
 interface NavItem {
   id: PageId
@@ -48,6 +70,15 @@ interface Props {
 }
 
 export default function TabNav({ activePage, onPageChange, open }: Props) {
+  const [, setTick] = useState(0)
+  const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : null
+
+  // Update relative time every minute
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60000)
+    return () => clearInterval(id)
+  }, [])
+
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {}
     GAMES.forEach((g) => {
@@ -102,6 +133,13 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
           )}
         </div>
       ))}
+
+      {buildTime && (
+        <div className="sidebar-build-info">
+          <span className="sidebar-build-ago">{formatRelativeTime(buildTime)} 업데이트</span>
+          <span className="sidebar-build-date">{formatDateTime(buildTime)}</span>
+        </div>
+      )}
     </aside>
   )
 }
