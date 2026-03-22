@@ -554,17 +554,17 @@ export class CommuteScene extends Phaser.Scene {
       fadeTargets.push({ obj: reviveBtn, delay: 0 });
     }
 
-    // 다시하기 버튼
-    const retryY = canRevive ? reviveY + btnSpacing : reviveY;
-    const retryBtn = addImgBtn('go-btn-retry', width / 2, retryY, btnW, () => {
+    // 홈으로 버튼
+    const homeY = canRevive ? reviveY + btnSpacing : reviveY;
+    const homeBtn = addImgBtn('go-btn-home', width / 2, homeY, btnW, () => {
       this.playSfx('sfx-click', 0.6);
-      logClick('game_retry');
-      this.scene.start('CommuteScene');
+      logClick('game_home');
+      this.scene.start('BootScene');
     });
-    fadeTargets.push({ obj: retryBtn, delay: canRevive ? 150 : 0 });
+    fadeTargets.push({ obj: homeBtn, delay: canRevive ? 150 : 0 });
 
     // 하단 작은 버튼 2개
-    const bottomY = retryY + btnSpacing;
+    const bottomY = homeY + btnSpacing;
     const smallLR = smallBtnW * 0.52;
     const challengeBtn = addImgBtn('go-btn-challenge', width / 2 - smallLR, bottomY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);

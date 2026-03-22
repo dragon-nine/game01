@@ -33,7 +33,7 @@ export class BootScene extends Phaser.Scene {
       ['toggle-off', 'ui/settings/toggle-off.png'],
       ['go-rabbit', 'game-over-screen/gameover-rabbit.png'],
       ['go-btn-revive', 'game-over-screen/btn-revive.png'],
-      ['go-btn-retry', 'game-over-screen/btn-retry.png'],
+      ['go-btn-home', 'game-over-screen/btn-home.png'],
       ['go-btn-challenge', 'game-over-screen/btn-challenge.png'],
       ['go-btn-ranking', 'game-over-screen/btn-ranking.png'],
     ];
