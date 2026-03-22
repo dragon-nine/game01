@@ -31,6 +31,11 @@ export class BootScene extends Phaser.Scene {
       ['settings-close', 'ui/settings/settings-close.png'],
       ['toggle-on', 'ui/settings/toggle-on.png'],
       ['toggle-off', 'ui/settings/toggle-off.png'],
+      ['go-rabbit', 'game-over-screen/gameover-rabbit.png'],
+      ['go-btn-revive', 'game-over-screen/btn-revive.png'],
+      ['go-btn-retry', 'game-over-screen/btn-retry.png'],
+      ['go-btn-challenge', 'game-over-screen/btn-challenge.png'],
+      ['go-btn-ranking', 'game-over-screen/btn-ranking.png'],
     ];
     for (const [key, path] of assets) {
       if (!this.textures.exists(key)) this.load.image(key, path);

@@ -18,6 +18,7 @@ const CATEGORY_DEFS = [
   { key: 'character', label: '캐릭터', accept: 'image/*', darkBg: true },
   { key: 'map', label: '맵 타일', accept: 'image/*', darkBg: true },
   { key: 'background', label: '배경', accept: 'image/*', darkBg: true },
+  { key: 'game-over-screen', label: '게임오버 스크린', accept: 'image/*', darkBg: true },
   { key: 'ui', label: 'UI', accept: 'image/*' },
   { key: 'audio', label: '오디오', accept: 'audio/*' },
 ]

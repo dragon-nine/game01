@@ -485,54 +485,97 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const ov = new Overlay(this).open({ fadeIn: true });
 
-    // 점수
-    const resultText = ov.addText(width / 2, height * 0.28, `점수: ${this.score}`, {
-      fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
+    const bestScore = Math.max(this.score, Number(localStorage.getItem('bestScore') || '0'));
+    localStorage.setItem('bestScore', String(bestScore));
+
+    // 이미지 버튼 헬퍼
+    const addImgBtn = (key: string, x: number, y: number, w: number, onClick: () => void) => {
+      const img = this.textures.get(key).getSourceImage();
+      const scale = w / img.width;
+      const btn = ov.add(
+        this.add.image(x, y, key)
+          .setScale(scale)
+          .setDepth(Overlay.DEPTH + 1)
+          .setInteractive({ useHandCursor: true })
+          .setAlpha(0)
+      );
+      btn.on('pointerdown', onClick);
+      return btn;
+    };
+
+    // 최고기록 텍스트
+    const bestText = ov.addText(width / 2, height * 0.15, `최고기록 ${bestScore}`, {
+      fontSize: '18px', color: '#999999',
     }).setAlpha(0);
 
+    // 큰 점수
+    const scoreText = ov.addText(width / 2, height * 0.22, `${this.score}`, {
+      fontSize: '64px', color: '#ffffff', fontStyle: 'bold',
+    }).setAlpha(0);
+
+    // 쓰러진 토끼
+    const rabbitImg = this.textures.get('go-rabbit').getSourceImage();
+    const rabbitW = width * 0.35;
+    const rabbitScale = rabbitW / rabbitImg.width;
+    const rabbit = ov.add(
+      this.add.image(width / 2, height * 0.36, 'go-rabbit')
+        .setScale(rabbitScale)
+        .setDepth(Overlay.DEPTH + 1)
+        .setAlpha(0)
+    );
+
+    // 멘트
+    const quoteText = ov.addText(width / 2, height * 0.46, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
+      fontSize: '16px', color: '#999999', align: 'center', lineSpacing: 6,
+    }).setAlpha(0);
+
+    // 페이드인: 점수 + 토끼
     this.time.delayedCall(500, () => {
-      ov.fadeInItems([resultText]);
+      ov.fadeInItems([bestText, scoreText, rabbit, quoteText]);
     });
 
-    const fadeTargets: { obj: Phaser.GameObjects.GameObject[]; delay: number }[] = [];
+    const fadeTargets: { obj: Phaser.GameObjects.GameObject; delay: number }[] = [];
+    const btnW = width * 0.85;
+    const smallBtnW = width * 0.40;
 
     // 부활 버튼 (1회만)
     if (canRevive) {
-      const reviveBtn = ov.addButton(width / 2, height * 0.42, 250, 56, '▶  광고 보고 부활', 0x44aa44, () => {
+      const reviveBtn = addImgBtn('go-btn-revive', width / 2, height * 0.57, btnW, () => {
         this.playSfx('sfx-click', 0.6);
         logEvent('revive_ad_click', { score: this.score });
         this.showAd(ov.getItems(), ov.getItems()[0] as Phaser.GameObjects.Rectangle, () => this.revive());
-      }, { fontSize: '20px' });
-      const reviveHint = ov.addText(width / 2, height * 0.47, '(1회만 가능)', { fontSize: '12px', color: '#777799' }).setAlpha(0);
-      fadeTargets.push({ obj: [reviveBtn.bg, reviveBtn.text, reviveHint], delay: 0 });
+      });
+      fadeTargets.push({ obj: reviveBtn, delay: 0 });
     }
 
-    // 랭킹/다시하기/홈
-    const btnBaseY = canRevive ? 0.54 : 0.42;
-
-    const lb = ov.addButton(width / 2, height * btnBaseY, 220, 56, '랭킹 보기', 0x3182f6, () => {
-      this.playSfx('sfx-click', 0.6);
-      logClick('leaderboard_open');
-      openLeaderboard();
-    }, { fontSize: '24px' });
-    fadeTargets.push({ obj: [lb.bg, lb.text], delay: canRevive ? 150 : 0 });
-
-    const retry = ov.addButton(width / 2, height * (btnBaseY + 0.10), 220, 56, '다시하기', 0xe94560, () => {
+    // 다시하기 버튼
+    const retryY = canRevive ? height * 0.66 : height * 0.57;
+    const retryBtn = addImgBtn('go-btn-retry', width / 2, retryY, btnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('game_retry');
       this.scene.start('CommuteScene');
-    }, { fontSize: '24px' });
-    fadeTargets.push({ obj: [retry.bg, retry.text], delay: canRevive ? 300 : 150 });
+    });
+    fadeTargets.push({ obj: retryBtn, delay: canRevive ? 150 : 0 });
 
-    const home = ov.addButton(width / 2, height * (btnBaseY + 0.20), 220, 48, '홈으로', 0x555555, () => {
+    // 하단 작은 버튼 2개
+    const bottomY = canRevive ? height * 0.76 : height * 0.67;
+    const challengeBtn = addImgBtn('go-btn-challenge', width * 0.27, bottomY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);
-      this.scene.start('BootScene');
-    }, { color: '#cccccc' });
-    fadeTargets.push({ obj: [home.bg, home.text], delay: canRevive ? 450 : 300 });
+      logClick('challenge_send');
+      // TODO: 도전장 보내기 기능
+    });
+    fadeTargets.push({ obj: challengeBtn, delay: canRevive ? 300 : 150 });
+
+    const rankingBtn = addImgBtn('go-btn-ranking', width * 0.73, bottomY, smallBtnW, () => {
+      this.playSfx('sfx-click', 0.6);
+      logClick('leaderboard_open');
+      openLeaderboard();
+    });
+    fadeTargets.push({ obj: rankingBtn, delay: canRevive ? 300 : 150 });
 
     this.time.delayedCall(800, () => {
       for (const { obj, delay } of fadeTargets) {
-        ov.fadeInItems(obj, delay);
+        ov.fadeInItems([obj], delay);
       }
     });
   }
