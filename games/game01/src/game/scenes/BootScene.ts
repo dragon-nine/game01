@@ -84,6 +84,14 @@ export class BootScene extends Phaser.Scene {
     const charScale = (width * 0.45) / charImg.width;
     charImg.setScale(charScale);
 
+    // 최고기록
+    const best = localStorage.getItem('bestScore') || '0';
+    const bestRecord = this.add.text(width / 2, height * 0.70, `최고기록 ${best}`, {
+      fontFamily: 'GMarketSans, sans-serif',
+      fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5).setAlpha(0);
+
     // Start button
     const btnImg = this.add.image(width / 2, height * 0.76, 'main-btn').setAlpha(0);
     const btnScale = (width * 0.55) / btnImg.width;
@@ -93,6 +101,7 @@ export class BootScene extends Phaser.Scene {
     // Fade-in animations
     this.tweens.add({ targets: titleImg, alpha: 1, y: height * 0.26, duration: 800, delay: 300, ease: 'Power2' });
     this.tweens.add({ targets: charImg, alpha: 1, y: height * 0.50, duration: 800, delay: 600, ease: 'Power2' });
+    this.tweens.add({ targets: bestRecord, alpha: 1, duration: 600, delay: 900, ease: 'Power2' });
     this.tweens.add({
       targets: btnImg, alpha: 1, duration: 600, delay: 1000,
       onComplete: () => {
