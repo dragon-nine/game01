@@ -12,6 +12,7 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null)
+  const [tooSmall, setTooSmall] = useState(false)
 
   // Image display state
   const [display, setDisplay] = useState({ iw: 0, ih: 0, scale: 1, ox: 0, oy: 0 })
@@ -33,10 +34,14 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
   // Calculate display layout when image loads
   useEffect(() => {
     if (!imgEl || !containerRef.current) return
+
+    // Check minimum size
+    setTooSmall(imgEl.naturalWidth < targetWidth || imgEl.naturalHeight < targetHeight)
+
     const container = containerRef.current
     const maxW = container.clientWidth - 40
     const maxH = container.clientHeight - 40
-    const scale = Math.min(maxW / imgEl.naturalWidth, maxH / imgEl.naturalHeight, 1)
+    const scale = Math.min(maxW / imgEl.naturalWidth, maxH / imgEl.naturalHeight)
     const iw = imgEl.naturalWidth * scale
     const ih = imgEl.naturalHeight * scale
     const ox = (container.clientWidth - iw) / 2
@@ -212,10 +217,16 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
           />
         </div>
         <div className="cropper-footer">
-          <span className="cropper-hint">드래그: 이동 / 우하단 꼭짓점: 크기 조절</span>
+          {tooSmall ? (
+            <span className="cropper-hint" style={{ color: '#ff6b6b' }}>
+              이미지가 너무 작습니다 ({imgEl?.naturalWidth}x{imgEl?.naturalHeight}) — 최소 {targetWidth}x{targetHeight} 이상 필요
+            </span>
+          ) : (
+            <span className="cropper-hint">드래그: 이동 / 우하단 꼭짓점: 크기 조절</span>
+          )}
           <div className="cropper-actions">
             <button className="le-btn le-btn-ghost" onClick={onCancel}>취소</button>
-            <button className="le-btn le-btn-save" onClick={handleApply}>적용</button>
+            <button className="le-btn le-btn-save" onClick={handleApply} disabled={tooSmall}>적용</button>
           </div>
         </div>
       </div>

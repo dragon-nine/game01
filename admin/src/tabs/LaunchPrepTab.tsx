@@ -31,7 +31,7 @@ function buildGroups(gameId: string): AssetGroup[] {
     {
       key: 'icon',
       label: '앱 아이콘',
-      desc: '600x600 저장',
+      desc: '600x600',
       accept: 'image/png',
       maxCount: 1,
       storeWidth: 600, storeHeight: 600,
@@ -44,7 +44,7 @@ function buildGroups(gameId: string): AssetGroup[] {
     {
       key: 'feature',
       label: '대표 이미지',
-      desc: '1932x828 저장 (토스 기준)',
+      desc: '1932x828',
       accept: 'image/png,image/jpeg',
       maxCount: 1,
       storeWidth: 1932, storeHeight: 828,
@@ -57,7 +57,7 @@ function buildGroups(gameId: string): AssetGroup[] {
     {
       key: 'screenshots',
       label: '스크린샷',
-      desc: '636x1048 저장',
+      desc: '636x1048',
       accept: 'image/png,image/jpeg',
       maxCount: 8,
       storeWidth: 636, storeHeight: 1048,
@@ -194,8 +194,10 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
       <div className="category-header">
         <button className="category-toggle" onClick={() => setCollapsed(!collapsed)}>
           <span className={`sidebar-chevron${collapsed ? '' : ' open'}`}>&#9656;</span>
-          <span className="card-title" style={{ marginBottom: 0 }}>{group.label}</span>
-          <span className="spec-badge">{group.desc}</span>
+          <span className="lp-label-wrap">
+            <span className="card-title" style={{ marginBottom: 0 }}>{group.label}</span>
+            {group.desc && <span className="spec-badge">{group.desc}</span>}
+          </span>
           <span className="section-count">{blobs.length} / {group.maxCount}</span>
         </button>
         {blobs.length < group.maxCount && (
@@ -284,7 +286,11 @@ export default function LaunchPrepTab({ gameId, gameName, onBanner }: Props) {
       <div className="lp-info">
         원본 이미지를 하나 올리고, 다운로드 버튼으로 각 플랫폼에 맞는 크기로 받으세요.
       </div>
-      {groups.map((g) => <LaunchGroup key={g.key} group={g} onBanner={onBanner} />)}
+      <div className="lp-row">
+        <LaunchGroup group={groups[0]} onBanner={onBanner} />
+        <LaunchGroup group={groups[1]} onBanner={onBanner} />
+      </div>
+      <LaunchGroup group={groups[2]} onBanner={onBanner} />
     </div>
   )
 }
