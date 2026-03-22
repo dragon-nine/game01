@@ -503,42 +503,35 @@ export class CommuteScene extends Phaser.Scene {
       return btn;
     };
 
-    // 요소 간 여백
-    const gap = height * 0.02;
-    const btnGap = height * 0.025;
-    let curY = height * 0.10;
+    // 부활_22 레이아웃 기준 고정 비율 배치
+    const btnW = width * 0.85;
+    const smallBtnW = width * 0.40;
 
     // 최고기록 텍스트
-    const bestText = ov.addText(width / 2, curY, `최고기록 ${bestScore}`, {
-      fontSize: '26px', color: '#ffffff',
+    const bestText = ov.addText(width / 2, height * 0.08, `최고기록 ${bestScore}`, {
+      fontSize: '22px', color: '#ffffff',
     }).setAlpha(0);
-    curY += bestText.height / 2 + gap;
 
     // 큰 점수
-    const scoreText = ov.addText(width / 2, curY, `${this.score}`, {
-      fontSize: '80px', color: '#ffffff', fontStyle: 'bold',
+    const scoreText = ov.addText(width / 2, height * 0.14, `${this.score}`, {
+      fontSize: '72px', color: '#ffffff', fontStyle: 'bold',
     }).setAlpha(0);
-    curY += scoreText.height / 2 + gap;
 
     // 쓰러진 토끼
     const rabbitSrc = this.textures.get('go-rabbit').getSourceImage();
-    const rabbitW = width * 0.5;
+    const rabbitW = width * 0.45;
     const rabbitScale = rabbitW / rabbitSrc.width;
-    const rabbitH = rabbitSrc.height * rabbitScale;
-    curY += rabbitH / 2;
     const rabbit = ov.add(
-      this.add.image(width / 2, curY, 'go-rabbit')
+      this.add.image(width / 2, height * 0.30, 'go-rabbit')
         .setScale(rabbitScale)
         .setDepth(Overlay.DEPTH + 1)
         .setAlpha(0)
     );
-    curY += rabbitH / 2 + gap;
 
     // 멘트
-    const quoteText = ov.addText(width / 2, curY, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
-      fontSize: '22px', color: '#ffffff', align: 'center', lineSpacing: 8,
+    const quoteText = ov.addText(width / 2, height * 0.43, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
+      fontSize: '18px', color: '#ffffff', align: 'center', lineSpacing: 6,
     }).setTint(0xe5332f, 0x771615, 0xe5332f, 0x771615).setAlpha(0);
-    curY += quoteText.height / 2 + gap * 2;
 
     // 페이드인: 점수 + 토끼
     this.time.delayedCall(500, () => {
@@ -546,51 +539,41 @@ export class CommuteScene extends Phaser.Scene {
     });
 
     const fadeTargets: { obj: Phaser.GameObjects.GameObject; delay: number }[] = [];
-    const btnW = width * 0.85;
-    const smallBtnW = width * 0.40;
 
-    // 이미지 버튼 높이 계산 헬퍼
-    const imgBtnH = (key: string, w: number) => {
-      const src = this.textures.get(key).getSourceImage();
-      return src.height * (w / src.width);
-    };
+    // 버튼 영역: 부활 유무에 따라 시작점 조정
+    const reviveY = height * 0.56;
+    const btnSpacing = height * 0.10;
 
     // 부활 버튼 (1회만)
     if (canRevive) {
-      const reviveH = imgBtnH('go-btn-revive', btnW);
-      curY += reviveH / 2;
-      const reviveBtn = addImgBtn('go-btn-revive', width / 2, curY, btnW, () => {
+      const reviveBtn = addImgBtn('go-btn-revive', width / 2, reviveY, btnW, () => {
         this.playSfx('sfx-click', 0.6);
         logEvent('revive_ad_click', { score: this.score });
         this.showAd(ov.getItems(), ov.getItems()[0] as Phaser.GameObjects.Rectangle, () => this.revive());
       });
       fadeTargets.push({ obj: reviveBtn, delay: 0 });
-      curY += reviveH / 2 + btnGap;
     }
 
     // 다시하기 버튼
-    const retryH = imgBtnH('go-btn-retry', btnW);
-    curY += retryH / 2;
-    const retryBtn = addImgBtn('go-btn-retry', width / 2, curY, btnW, () => {
+    const retryY = canRevive ? reviveY + btnSpacing : reviveY;
+    const retryBtn = addImgBtn('go-btn-retry', width / 2, retryY, btnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('game_retry');
       this.scene.start('CommuteScene');
     });
     fadeTargets.push({ obj: retryBtn, delay: canRevive ? 150 : 0 });
-    curY += retryH / 2 + btnGap;
 
     // 하단 작은 버튼 2개
-    const smallH = imgBtnH('go-btn-challenge', smallBtnW);
-    curY += smallH / 2;
-    const smallLR = smallBtnW * 0.52; // 좌우 간격 (버튼 폭보다 약간 큰 간격)
-    const challengeBtn = addImgBtn('go-btn-challenge', width / 2 - smallLR, curY, smallBtnW, () => {
+    const bottomY = retryY + btnSpacing;
+    const smallLR = smallBtnW * 0.52;
+    const challengeBtn = addImgBtn('go-btn-challenge', width / 2 - smallLR, bottomY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('challenge_send');
       // TODO: 도전장 보내기 기능
     });
     fadeTargets.push({ obj: challengeBtn, delay: canRevive ? 300 : 150 });
 
-    const rankingBtn = addImgBtn('go-btn-ranking', width / 2 + smallLR, curY, smallBtnW, () => {
+    const rankingBtn = addImgBtn('go-btn-ranking', width / 2 + smallLR, bottomY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('leaderboard_open');
       openLeaderboard();
