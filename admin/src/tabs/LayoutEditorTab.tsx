@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { listBlobs, uploadBlob } from '../api'
-import LazyImage from '../components/LazyImage'
 
 /* ── Shared types (mirrors game/layout-types.ts) ── */
 
@@ -11,11 +10,11 @@ type AnchorCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 interface GroupElement {
   id: string; positioning: 'group'; type: 'text' | 'image'
-  order: number; gapPx: number; widthPx: number; label?: string
+  order: number; gapPx: number; widthPx: number; label?: string; fontSizePx?: number
 }
 interface AnchorElement {
   id: string; positioning: 'anchor'; type: 'text' | 'image'
-  anchor: AnchorCorner; offsetX: number; offsetY: number; widthPx: number; label?: string
+  anchor: AnchorCorner; offsetX: number; offsetY: number; widthPx: number; label?: string; fontSizePx?: number
 }
 type LayoutElement = GroupElement | AnchorElement
 
@@ -60,7 +59,9 @@ function computePreviewLayout(
       if (el.type === 'image' && imageSizes[el.id]) {
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
       } else {
-        maxH = Math.max(maxH, el.type === 'text' ? 24 * scale : elW * 0.3) // text estimate
+        const fontSize = (el.fontSizePx || 14) * scale
+        const lines = (el.label || el.id).split('\n').length
+        maxH = Math.max(maxH, fontSize * 1.4 * lines)
       }
     }
     rows.push({ elements: rowEls, height: maxH, gapPx })
@@ -127,15 +128,15 @@ const SCREEN_DEFAULTS: Record<string, LayoutElement[]> = {
   'main-screen': [
     { id: 'main-text', positioning: 'group', type: 'image', order: 0, gapPx: 0, widthPx: 331 },
     { id: 'main-char', positioning: 'group', type: 'image', order: 1, gapPx: 24, widthPx: 175 },
-    { id: 'bestScore', positioning: 'group', type: 'text', order: 2, gapPx: 20, widthPx: 200, label: '최고기록 0' },
+    { id: 'bestScore', positioning: 'group', type: 'text', order: 2, gapPx: 20, widthPx: 200, label: '최고기록 0', fontSizePx: 22 },
     { id: 'main-btn', positioning: 'group', type: 'image', order: 3, gapPx: 20, widthPx: 214 },
     { id: 'btn-settings', positioning: 'anchor', type: 'image', anchor: 'top-right', offsetX: 20, offsetY: 20, widthPx: 35 },
   ],
   'game-over': [
-    { id: 'bestText', positioning: 'group', type: 'text', order: 0, gapPx: 0, widthPx: 234, label: '최고기록 0' },
-    { id: 'scoreText', positioning: 'group', type: 'text', order: 1, gapPx: 12, widthPx: 156, label: '0' },
+    { id: 'bestText', positioning: 'group', type: 'text', order: 0, gapPx: 0, widthPx: 234, label: '최고기록 0', fontSizePx: 22 },
+    { id: 'scoreText', positioning: 'group', type: 'text', order: 1, gapPx: 12, widthPx: 156, label: '0', fontSizePx: 72 },
     { id: 'go-rabbit', positioning: 'group', type: 'image', order: 2, gapPx: 16, widthPx: 175 },
-    { id: 'quoteText', positioning: 'group', type: 'text', order: 3, gapPx: 16, widthPx: 273, label: '퇴근은 쉬운게 아니야...' },
+    { id: 'quoteText', positioning: 'group', type: 'text', order: 3, gapPx: 16, widthPx: 273, label: '퇴근은 쉬운게 아니야...\n인생이 원래 그래', fontSizePx: 18 },
     { id: 'go-btn-revive', positioning: 'group', type: 'image', order: 4, gapPx: 24, widthPx: 331 },
     { id: 'go-btn-home', positioning: 'group', type: 'image', order: 5, gapPx: 16, widthPx: 331 },
     { id: 'go-btn-challenge', positioning: 'group', type: 'image', order: 6, gapPx: 16, widthPx: 156 },
@@ -433,9 +434,9 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     onPointerDown={(e) => handlePointerDown(e, pos.id)}
                   >
                     {el.type === 'image' && assetUrls[el.id] ? (
-                      <LazyImage src={assetUrls[el.id]} alt={el.id} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <img src={assetUrls[el.id]} alt={el.id} draggable={false} />
                     ) : (
-                      <div className="le-el-text" style={{ fontSize: `${Math.max(8, pos.h * 0.6)}px` }}>{el.label || el.id}</div>
+                      <div className="le-el-text" style={{ fontSize: `${Math.max(6, (el.fontSizePx || 14) * previewScale)}px` }}>{el.label || el.id}</div>
                     )}
                     {el.positioning === 'group' && el.gapPx > 0 && (
                       <div className="le-el-gap" data-gap={`${el.gapPx}px`}
