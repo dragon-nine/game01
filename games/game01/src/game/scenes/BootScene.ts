@@ -140,7 +140,7 @@ export class BootScene extends Phaser.Scene {
     // 설정 패널 배경 (892x737 원본 비율)
     const panelW = width * 0.82;
     const panelH = panelW * (737 / 892);
-    const panelY = height * 0.45;
+    const panelY = height * 0.5;
     ov.add(
       this.add.image(width / 2, panelY, 'settings-bg')
         .setDisplaySize(panelW, panelH)
