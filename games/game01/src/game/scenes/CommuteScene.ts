@@ -503,31 +503,42 @@ export class CommuteScene extends Phaser.Scene {
       return btn;
     };
 
+    // 요소 간 여백
+    const gap = height * 0.02;
+    const btnGap = height * 0.025;
+    let curY = height * 0.10;
+
     // 최고기록 텍스트
-    const bestText = ov.addText(width / 2, height * 0.15, `최고기록 ${bestScore}`, {
+    const bestText = ov.addText(width / 2, curY, `최고기록 ${bestScore}`, {
       fontSize: '26px', color: '#ffffff',
     }).setAlpha(0);
+    curY += bestText.height / 2 + gap;
 
     // 큰 점수
-    const scoreText = ov.addText(width / 2, height * 0.22, `${this.score}`, {
+    const scoreText = ov.addText(width / 2, curY, `${this.score}`, {
       fontSize: '80px', color: '#ffffff', fontStyle: 'bold',
     }).setAlpha(0);
+    curY += scoreText.height / 2 + gap;
 
     // 쓰러진 토끼
-    const rabbitImg = this.textures.get('go-rabbit').getSourceImage();
+    const rabbitSrc = this.textures.get('go-rabbit').getSourceImage();
     const rabbitW = width * 0.5;
-    const rabbitScale = rabbitW / rabbitImg.width;
+    const rabbitScale = rabbitW / rabbitSrc.width;
+    const rabbitH = rabbitSrc.height * rabbitScale;
+    curY += rabbitH / 2;
     const rabbit = ov.add(
-      this.add.image(width / 2, height * 0.36, 'go-rabbit')
+      this.add.image(width / 2, curY, 'go-rabbit')
         .setScale(rabbitScale)
         .setDepth(Overlay.DEPTH + 1)
         .setAlpha(0)
     );
+    curY += rabbitH / 2 + gap;
 
     // 멘트
-    const quoteText = ov.addText(width / 2, height * 0.46, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
+    const quoteText = ov.addText(width / 2, curY, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
       fontSize: '22px', color: '#ffffff', align: 'center', lineSpacing: 8,
     }).setTint(0xe5332f, 0x771615, 0xe5332f, 0x771615).setAlpha(0);
+    curY += quoteText.height / 2 + gap * 2;
 
     // 페이드인: 점수 + 토끼
     this.time.delayedCall(500, () => {
@@ -538,42 +549,48 @@ export class CommuteScene extends Phaser.Scene {
     const btnW = width * 0.85;
     const smallBtnW = width * 0.40;
 
-    // 버튼 배치 (동일 간격)
-    const btnGap = height * 0.09;
-    const btnStartY = height * 0.57;
-    let btnIdx = 0;
+    // 이미지 버튼 높이 계산 헬퍼
+    const imgBtnH = (key: string, w: number) => {
+      const src = this.textures.get(key).getSourceImage();
+      return src.height * (w / src.width);
+    };
 
     // 부활 버튼 (1회만)
     if (canRevive) {
-      const reviveBtn = addImgBtn('go-btn-revive', width / 2, btnStartY + btnGap * btnIdx, btnW, () => {
+      const reviveH = imgBtnH('go-btn-revive', btnW);
+      curY += reviveH / 2;
+      const reviveBtn = addImgBtn('go-btn-revive', width / 2, curY, btnW, () => {
         this.playSfx('sfx-click', 0.6);
         logEvent('revive_ad_click', { score: this.score });
         this.showAd(ov.getItems(), ov.getItems()[0] as Phaser.GameObjects.Rectangle, () => this.revive());
       });
       fadeTargets.push({ obj: reviveBtn, delay: 0 });
-      btnIdx++;
+      curY += reviveH / 2 + btnGap;
     }
 
     // 다시하기 버튼
-    const retryBtn = addImgBtn('go-btn-retry', width / 2, btnStartY + btnGap * btnIdx, btnW, () => {
+    const retryH = imgBtnH('go-btn-retry', btnW);
+    curY += retryH / 2;
+    const retryBtn = addImgBtn('go-btn-retry', width / 2, curY, btnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('game_retry');
       this.scene.start('CommuteScene');
     });
     fadeTargets.push({ obj: retryBtn, delay: canRevive ? 150 : 0 });
-    btnIdx++;
+    curY += retryH / 2 + btnGap;
 
-    // 하단 작은 버튼 2개 (좌우 간격은 상하 간격보다 약간 작게)
-    const bottomY = btnStartY + btnGap * btnIdx;
-    const smallGap = btnGap * 0.6;
-    const challengeBtn = addImgBtn('go-btn-challenge', width / 2 - smallGap, bottomY, smallBtnW, () => {
+    // 하단 작은 버튼 2개
+    const smallH = imgBtnH('go-btn-challenge', smallBtnW);
+    curY += smallH / 2;
+    const smallLR = smallBtnW * 0.52; // 좌우 간격 (버튼 폭보다 약간 큰 간격)
+    const challengeBtn = addImgBtn('go-btn-challenge', width / 2 - smallLR, curY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('challenge_send');
       // TODO: 도전장 보내기 기능
     });
     fadeTargets.push({ obj: challengeBtn, delay: canRevive ? 300 : 150 });
 
-    const rankingBtn = addImgBtn('go-btn-ranking', width / 2 + smallGap, bottomY, smallBtnW, () => {
+    const rankingBtn = addImgBtn('go-btn-ranking', width / 2 + smallLR, curY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('leaderboard_open');
       openLeaderboard();
