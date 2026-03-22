@@ -373,7 +373,8 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
       await uploadBlob(file, `${gameId}/layout/`, `${screen}.json`)
       onBanner('success', '레이아웃이 저장되었습니다')
     } catch (err) {
-      onBanner('error', `저장 실패: ${(err as Error).message}`)
+      const msg = err instanceof Error ? err.message : String(err)
+      onBanner('error', `저장 실패: ${msg}`)
     }
     setSaving(false)
   }
@@ -503,7 +504,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                 <div className="le-field-row">
                   <input type="number" min={10} max={390} step={1}
                     value={selected.widthPx}
-                    onChange={(e) => updateEl(selected.id, { widthPx: parseInt(e.target.value) || 100 })}
+                    onChange={(e) => updateEl(selected.id, { widthPx: Number(e.target.value) || 100 })}
                   />
                   <span className="le-field-px">px</span>
                 </div>
@@ -516,7 +517,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={0} max={20} step={1}
                         value={selected.order}
-                        onChange={(e) => updateEl(selected.id, { order: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { order: Number(e.target.value) || 0 })}
                       />
                     </div>
                   </div>
@@ -525,7 +526,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={-200} max={200} step={1}
                         value={selected.gapPx}
-                        onChange={(e) => updateEl(selected.id, { gapPx: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { gapPx: Number(e.target.value) || 0 })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
@@ -550,7 +551,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={0} max={200} step={1}
                         value={selected.offsetX}
-                        onChange={(e) => updateEl(selected.id, { offsetX: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { offsetX: Number(e.target.value) || 0 })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
@@ -560,7 +561,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={0} max={200} step={1}
                         value={selected.offsetY}
-                        onChange={(e) => updateEl(selected.id, { offsetY: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { offsetY: Number(e.target.value) || 0 })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
@@ -576,7 +577,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={8} max={120} step={1}
                         value={selected.textStyle?.fontSizePx || 14}
-                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, fontSizePx: parseInt(e.target.value) || 14 } })}
+                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, fontSizePx: Number(e.target.value) || 14 } })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
@@ -595,8 +596,8 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <label>테두리 굵기</label>
                     <div className="le-field-row">
                       <input type="number" min={0} max={20} step={1}
-                        value={selected.textStyle?.strokeWidth || 0}
-                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, strokeWidth: parseInt(e.target.value) || 0 } })}
+                        value={selected.textStyle?.strokeWidth ?? 0}
+                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, strokeWidth: Number(e.target.value) } })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
