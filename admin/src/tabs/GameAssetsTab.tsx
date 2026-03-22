@@ -13,6 +13,7 @@ interface CategoryDef {
 }
 
 const CATEGORY_DEFS = [
+  { key: 'new', label: 'NEW', accept: 'image/*,audio/*', darkBg: true },
   { key: 'character', label: '캐릭터', accept: 'image/*', darkBg: true },
   { key: 'map', label: '맵 타일', accept: 'image/*', darkBg: true },
   { key: 'ui', label: 'UI', accept: 'image/*' },
