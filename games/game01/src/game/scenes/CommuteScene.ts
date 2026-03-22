@@ -427,6 +427,12 @@ export class CommuteScene extends Phaser.Scene {
     this.player.setHurt(false);
     this.player.resetSprite();
 
+    // 토끼 Y 위치를 원래 위치로 복원
+    const { height } = this.scale;
+    const PLAYER_Y_RATIO = 3 / 4;
+    const playerScreenY = height * PLAYER_Y_RATIO - this.tileH / 2;
+    this.player.scrollTo(this.player.x, playerScreenY);
+
     // 현재 도로 행의 올바른 레인으로 복원
     const row = this.road.rows[this.currentRowIdx];
     if (row) {
