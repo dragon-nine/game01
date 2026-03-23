@@ -1,7 +1,16 @@
 import type { LayoutElement, ScreenLayout } from './layout-types'
 import { DEFAULT_LAYOUTS } from './default-layouts'
 
-const BLOB_BASE = 'https://hhgnhfkftrktusxf.public.blob.vercel-storage.com'
+// Vite JSON import — 빌드 시 인라인됨 (배포 환경에서도 확실히 동작)
+import mainScreenLayout from '../../public/layout/main-screen.json'
+import gameOverLayout from '../../public/layout/game-over.json'
+import gameplayLayout from '../../public/layout/gameplay.json'
+
+const BUNDLED_LAYOUTS: Record<string, unknown> = {
+  'main-screen': mainScreenLayout,
+  'game-over': gameOverLayout,
+  'gameplay': gameplayLayout,
+}
 
 interface LoadedLayout {
   elements: LayoutElement[]
@@ -17,56 +26,32 @@ function parseLayout(data: ScreenLayout | { elements?: LayoutElement[]; groupVAl
   }
 }
 
-/**
- * Fetch layout JSON. Tries in order:
- * 1. Local static file (public/layout/{screen}.json) — works in dev & prod
- * 2. Vercel Blob — remote storage
- * 3. Built-in defaults — hardcoded fallback
- */
 export async function loadLayout(gameId: string, screen: string): Promise<LayoutElement[]> {
   const loaded = await loadLayoutFull(gameId, screen)
   return loaded.elements
 }
 
-export async function loadLayoutFull(gameId: string, screen: string): Promise<LoadedLayout> {
-  const cacheKey = `${gameId}/${screen}`
-  if (layoutCache.has(cacheKey)) return layoutCache.get(cacheKey)!
+export async function loadLayoutFull(_gameId: string, screen: string): Promise<LoadedLayout> {
+  if (layoutCache.has(screen)) return layoutCache.get(screen)!
 
-  // Try local static file first
-  try {
-    const base = import.meta.env.BASE_URL || '/'
-    const localUrl = `${base}layout/${screen}.json`
-    const res = await fetch(localUrl)
-    if (res.ok) {
-      const layout = await res.json()
-      const loaded = parseLayout(layout)
-      layoutCache.set(cacheKey, loaded)
-      return loaded
-    }
-  } catch { /* try blob */ }
+  // 1. 번들된 JSON (public/layout/*.json → import)
+  const bundled = BUNDLED_LAYOUTS[screen]
+  if (bundled) {
+    const loaded = parseLayout(bundled as ScreenLayout)
+    layoutCache.set(screen, loaded)
+    return loaded
+  }
 
-  // Try blob
-  try {
-    const url = `${BLOB_BASE}/${gameId}/layout/${screen}.json`
-    const res = await fetch(url)
-    if (res.ok) {
-      const layout = await res.json()
-      const loaded = parseLayout(layout)
-      layoutCache.set(cacheKey, loaded)
-      return loaded
-    }
-  } catch { /* fallback to defaults */ }
-
+  // 2. 하드코딩 기본값
   const defaults = DEFAULT_LAYOUTS[screen]
   const loaded: LoadedLayout = {
     elements: defaults?.elements || [],
     groupVAlign: defaults?.groupVAlign === 'top' ? 'top' : 'center',
   }
-  layoutCache.set(cacheKey, loaded)
+  layoutCache.set(screen, loaded)
   return loaded
 }
 
-/** Clear cache */
 export function clearLayoutCache() {
   layoutCache.clear()
 }
