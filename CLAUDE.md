@@ -5,7 +5,7 @@
 ## 구조
 ```
 ├── admin/          — 에셋/레이아웃 관리 어드민 (Vite + React)
-├── api/            — Vercel serverless functions (Blob API)
+├── api/            — Vercel serverless functions (R2 Storage API)
 ├── scripts/        — 빌드/동기화 스크립트
 ├── games/game01/   — 직장인 잔혹사 (Phaser 3 + React 하이브리드)
 ├── vercel.json     — 라우팅 + 빌드 커맨드
@@ -24,12 +24,12 @@ npm run dev:game01    # game01 단독 dev server
 - URL: dragon-nine-109.vercel.app
 - /admin — 어드민 페이지
 - /game01 — 게임
-- 2026-04-21까지 Blob Hobby 한도 초과 — 로컬 파일 fallback 사용
+- 스토리지: Cloudflare R2 (버킷: dragon-nine)
 
 ## 핵심 규칙
 - Phaser config에 `loader.baseURL: import.meta.env.BASE_URL` 필수
-- Blob API는 Web API 스타일 (`export async function GET/POST`)
-- Blob Store는 Public Access, `access: 'public'` 필수
+- Storage API는 Web API 스타일 (`export async function GET/POST`)
+- R2는 Public Access 활성화 필수
 - admin 로딩 시 엑박 금지 — shimmer skeleton 사용
 - number input은 NumInput 컴포넌트 사용 (type="number" 금지)
 

@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">직장인 잔혹시</string>
     <string name="title_activity_main">직장인 잔혹시</string>
-    <string name="package_name">com.dragonnine.workernightmare</string>
-    <string name="custom_url_scheme">com.dragonnine.workernightmare</string>
+    <string name="package_name">com.dragonnine.game01</string>
+    <string name="custom_url_scheme">com.dragonnine.game01</string>
 </resources>

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.dragonnine.workernightmare',
+  appId: 'com.dragonnine.game01',
   appName: '직장인 잔혹시',
   webDir: 'dist',
   android: {

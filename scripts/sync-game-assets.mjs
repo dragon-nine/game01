@@ -1,46 +1,62 @@
-import { list } from '@vercel/blob';
+import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+const ENDPOINT = process.env.R2_ENDPOINT;
+const ACCESS_KEY = process.env.R2_ACCESS_KEY_ID;
+const SECRET_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const BUCKET = process.env.R2_BUCKET_NAME || 'dragon-nine';
+const PUBLIC_URL = process.env.R2_PUBLIC_URL;
+
 const TARGET_DIR = join(import.meta.dirname, '..', 'games', 'game01', 'public');
 const PREFIX = 'game01/';
 
 async function main() {
-  if (!TOKEN) {
-    console.log('[sync-assets] BLOB_READ_WRITE_TOKEN not set, skipping sync');
+  if (!ACCESS_KEY || !SECRET_KEY) {
+    console.log('[sync-assets] R2 credentials not set, skipping sync');
     return;
   }
 
-  console.log('[sync-assets] Fetching asset list from Vercel Blob...');
+  const r2 = new S3Client({
+    region: 'auto',
+    endpoint: ENDPOINT,
+    credentials: { accessKeyId: ACCESS_KEY, secretAccessKey: SECRET_KEY },
+  });
 
-  let cursor;
+  console.log('[sync-assets] Fetching asset list from Cloudflare R2...');
+
+  let continuationToken;
   let synced = 0;
 
   do {
-    const result = await list({ prefix: PREFIX, token: TOKEN, cursor });
+    const result = await r2.send(new ListObjectsV2Command({
+      Bucket: BUCKET,
+      Prefix: PREFIX,
+      ContinuationToken: continuationToken,
+    }));
 
-    for (const blob of result.blobs) {
-      const relativePath = blob.pathname.slice(PREFIX.length);
+    for (const obj of result.Contents || []) {
+      const relativePath = obj.Key.slice(PREFIX.length);
       if (!relativePath) continue;
 
       const targetPath = join(TARGET_DIR, relativePath);
       await mkdir(dirname(targetPath), { recursive: true });
 
-      const res = await fetch(blob.url);
+      const url = `${PUBLIC_URL}/${obj.Key}`;
+      const res = await fetch(url);
       if (!res.ok) {
-        console.warn(`[sync-assets] Failed to fetch ${blob.pathname}: ${res.status}`);
+        console.warn(`[sync-assets] Failed to fetch ${obj.Key}: ${res.status}`);
         continue;
       }
 
       const buffer = Buffer.from(await res.arrayBuffer());
       await writeFile(targetPath, buffer);
       synced++;
-      console.log(`  -> ${relativePath} (${(blob.size / 1024).toFixed(1)}KB)`);
+      console.log(`  -> ${relativePath} (${(obj.Size / 1024).toFixed(1)}KB)`);
     }
 
-    cursor = result.cursor;
-  } while (cursor);
+    continuationToken = result.IsTruncated ? result.NextContinuationToken : undefined;
+  } while (continuationToken);
 
   console.log(`[sync-assets] Synced ${synced} files to ${TARGET_DIR}`);
 }

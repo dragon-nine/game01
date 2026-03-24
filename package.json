@@ -12,6 +12,6 @@
     "dev:admin": "npm run dev --prefix admin"
   },
   "dependencies": {
-    "@vercel/blob": "^1.0.0"
+    "@aws-sdk/client-s3": "^3.1015.0"
   }
 }

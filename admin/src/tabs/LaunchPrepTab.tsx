@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import type { BlobItem } from '../types'
-import { listBlobs, uploadBlob, deleteBlob } from '../api'
 import ImageCropper from '../components/ImageCropper'
 import DownloadCropper from '../components/DownloadCropper'
 import LazyImage from '../components/LazyImage'
@@ -143,11 +142,18 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [downloadCropUrl, setDownloadCropUrl] = useState<{ url: string; filename: string; opt: DownloadOption } | null>(null)
 
-  const refresh = useCallback(async () => {
-    try { setBlobs(await listBlobs(group.prefix)); setCacheBust(Date.now()) } catch { setBlobs([]) }
+  // 로컬 메모리에 이미지 추가
+  const addLocalBlob = useCallback((file: File) => {
+    const url = URL.createObjectURL(file)
+    const item: BlobItem = {
+      url,
+      pathname: `${group.prefix}${file.name}`,
+      size: file.size,
+      uploadedAt: new Date().toISOString(),
+    }
+    setBlobs(prev => [...prev, item])
+    setCacheBust(Date.now())
   }, [group.prefix])
-
-  useEffect(() => { refresh() }, [refresh])
 
   const handleFileSelected = useCallback((files: File[]) => {
     if (blobs.length + files.length > group.maxCount) {
@@ -158,58 +164,41 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
     if (!file) return
 
     if (group.exactOnly) {
-      // Validate exact dimensions, upload directly without cropper
       const img = new Image()
-      img.onload = async () => {
+      img.onload = () => {
         URL.revokeObjectURL(img.src)
         if (img.naturalWidth !== group.storeWidth || img.naturalHeight !== group.storeHeight) {
           onBanner('error', `${group.storeWidth}x${group.storeHeight} 이미지만 업로드 가능합니다 (현재: ${img.naturalWidth}x${img.naturalHeight})`)
           return
         }
-        try {
-          // Delete existing files first (replace)
-          for (const b of blobs) await deleteBlob(b.url)
-          const ext = file.name.match(/\.\w+$/)?.[0] || '.png'
-          const renamed = new File([file], `${group.fileBaseName}${ext}`, { type: file.type })
-          await uploadBlob(renamed, group.prefix)
-          onBanner('success', '업로드 완료')
-          refresh()
-        } catch (err) {
-          onBanner('error', `업로드 실패: ${(err as Error).message}`)
-        }
+        const ext = file.name.match(/\.\w+$/)?.[0] || '.png'
+        const renamed = new File([file], `${group.fileBaseName}${ext}`, { type: file.type })
+        // exactOnly는 1개만 — 기존 것 교체
+        setBlobs([])
+        addLocalBlob(renamed)
+        onBanner('success', '추가 완료')
       }
       img.src = URL.createObjectURL(file)
     } else {
       setCropFile(file)
     }
-  }, [blobs, group.maxCount, group.exactOnly, group.storeWidth, group.storeHeight, group.prefix, group.fileBaseName, onBanner, refresh])
+  }, [blobs, group.maxCount, group.exactOnly, group.storeWidth, group.storeHeight, group.fileBaseName, onBanner, addLocalBlob])
 
-  const handleCropped = useCallback(async (croppedFile: File) => {
+  const handleCropped = useCallback((croppedFile: File) => {
     setCropFile(null)
-    try {
-      // Get current count from server to avoid duplicate names
-      const current = await listBlobs(group.prefix)
-      const ext = croppedFile.name.match(/\.\w+$/)?.[0] || '.png'
-      const num = String(current.length + 1).padStart(2, '0')
-      const named = new File([croppedFile], `${group.fileBaseName}_${num}${ext}`, { type: croppedFile.type })
-      await uploadBlob(named, group.prefix)
-      onBanner('success', '업로드 완료')
-      refresh()
-    } catch (err) {
-      onBanner('error', `업로드 실패: ${(err as Error).message}`)
-    }
-  }, [group.prefix, group.fileBaseName, onBanner, refresh])
+    const ext = croppedFile.name.match(/\.\w+$/)?.[0] || '.png'
+    const num = String(blobs.length + 1).padStart(2, '0')
+    const named = new File([croppedFile], `${group.fileBaseName}_${num}${ext}`, { type: croppedFile.type })
+    addLocalBlob(named)
+    onBanner('success', '추가 완료')
+  }, [blobs.length, group.fileBaseName, onBanner, addLocalBlob])
 
-  const handleDelete = useCallback(async (url: string) => {
+  const handleDelete = useCallback((url: string) => {
     if (!confirm('삭제하시겠습니까?')) return
-    try {
-      await deleteBlob(url)
-      onBanner('success', '삭제 완료')
-      refresh()
-    } catch (err) {
-      onBanner('error', `삭제 실패: ${(err as Error).message}`)
-    }
-  }, [onBanner, refresh])
+    URL.revokeObjectURL(url)
+    setBlobs(prev => prev.filter(b => b.url !== url))
+    onBanner('success', '삭제 완료')
+  }, [onBanner])
 
   const handleDownload = useCallback((blob: BlobItem, opt: DownloadOption) => {
     const origName = getFilename(blob.pathname)

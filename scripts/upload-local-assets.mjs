@@ -1,14 +1,16 @@
-import { put } from '@vercel/blob';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { readdirSync, statSync } from 'node:fs';
+const ENDPOINT = process.env.R2_ENDPOINT;
+const ACCESS_KEY = process.env.R2_ACCESS_KEY_ID;
+const SECRET_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const BUCKET = process.env.R2_BUCKET_NAME || 'dragon-nine';
 
-const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 const PUBLIC_DIR = resolve(import.meta.dirname, '..', 'games', 'game01', 'public');
 const PREFIX = 'game01/';
 
-// 업로드 대상 폴더들
-const FOLDERS = ['character', 'map', 'obstacles', 'ui', 'audio/bgm', 'audio/sfx'];
+const FOLDERS = ['character', 'map', 'ui', 'audio/bgm', 'audio/sfx', 'background', 'game-over-screen', 'main-screen', 'layout'];
 
 function getAllFiles(dir) {
   const results = [];
@@ -23,12 +25,30 @@ function getAllFiles(dir) {
   return results;
 }
 
+function getMimeType(filePath) {
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  const types = {
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+    mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav',
+    json: 'application/json',
+  };
+  return types[ext] || 'application/octet-stream';
+}
+
 async function main() {
-  if (!TOKEN) {
-    console.error('[upload] BLOB_READ_WRITE_TOKEN 환경변수를 설정해주세요');
-    console.error('  export BLOB_READ_WRITE_TOKEN=vercel_blob_...');
+  if (!ACCESS_KEY || !SECRET_KEY) {
+    console.error('[upload] R2 환경변수를 설정해주세요');
+    console.error('  export R2_ACCESS_KEY_ID=...');
+    console.error('  export R2_SECRET_ACCESS_KEY=...');
     process.exit(1);
   }
+
+  const r2 = new S3Client({
+    region: 'auto',
+    endpoint: ENDPOINT,
+    credentials: { accessKeyId: ACCESS_KEY, secretAccessKey: SECRET_KEY },
+  });
 
   let uploaded = 0;
 
@@ -37,19 +57,19 @@ async function main() {
     try {
       const files = getAllFiles(dir);
       for (const filePath of files) {
-        const relativePath = filePath.slice(PUBLIC_DIR.length + 1); // e.g. character/rabbit.png
-        const blobPath = PREFIX + relativePath;
+        const relativePath = filePath.slice(PUBLIC_DIR.length + 1);
+        const key = PREFIX + relativePath;
         const content = await readFile(filePath);
 
-        await put(blobPath, content, {
-          access: 'public',
-          token: TOKEN,
-          allowOverwrite: true,
-          addRandomSuffix: false,
-        });
+        await r2.send(new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: key,
+          Body: content,
+          ContentType: getMimeType(filePath),
+        }));
 
         uploaded++;
-        console.log(`  ✓ ${blobPath} (${(content.length / 1024).toFixed(1)}KB)`);
+        console.log(`  ✓ ${key} (${(content.length / 1024).toFixed(1)}KB)`);
       }
     } catch (err) {
       console.warn(`  [skip] ${folder}: ${err.message}`);

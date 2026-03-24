@@ -47,7 +47,7 @@ public/
 - 모든 텍스처에 LINEAR 필터 적용
 - 에셋 크기: 표시 크기의 2~3x 준비
 
-## Blob Storage
-- base: https://hhgnhfkftrktusxf.public.blob.vercel-storage.com/
+## Cloudflare R2 Storage
+- bucket: dragon-nine
+- public URL: https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev
 - 경로: game01/{category}/{filename}
-- 2026-04-21까지 한도 초과 → 로컬 fallback 사용
