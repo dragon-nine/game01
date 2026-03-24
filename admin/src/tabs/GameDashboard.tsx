@@ -14,7 +14,7 @@ const GAMES: GameInfo[] = [
   {
     id: 'game01',
     name: '직장인 잔혹사 : 퇴근길',
-    desc: '2레인 도로 러너',
+    desc: '퇴근길은 만만치 않다! 2레인 도로를 달리며 장애물을 피하는 캐주얼 러너 게임.',
     icon: '/images/game01-icon.png',
     gameUrl: '/game01/',
     firstPage: 'game01-assets',

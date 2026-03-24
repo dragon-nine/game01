@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { BlobItem } from '../types'
+import { listBlobs, uploadBlob, deleteBlob } from '../api'
 import ImageCropper from '../components/ImageCropper'
 import DownloadCropper from '../components/DownloadCropper'
 import LazyImage from '../components/LazyImage'
@@ -103,16 +104,20 @@ function triggerDownload(blobUrl: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
 }
 
+function proxyUrl(url: string): string {
+  return `/api/blob-image?url=${encodeURIComponent(url)}`
+}
+
 // Download original file as-is
 async function downloadOriginal(url: string, filename: string) {
-  const res = await fetch(url)
+  const res = await fetch(proxyUrl(url))
   const data = await res.blob()
   triggerDownload(URL.createObjectURL(data), filename)
 }
 
 // Download resized version
 async function downloadResized(url: string, filename: string, targetW: number, targetH: number) {
-  const res = await fetch(url)
+  const res = await fetch(proxyUrl(url))
   const data = await res.blob()
   const img = new Image()
   await new Promise<void>((resolve, reject) => {
@@ -138,25 +143,48 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
   const addRef = useRef<HTMLInputElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [blobs, setBlobs] = useState<BlobItem[]>([])
-  const [cacheBust, setCacheBust] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [deleting, setDeleting] = useState<Set<string>>(new Set())
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [downloadCropUrl, setDownloadCropUrl] = useState<{ url: string; filename: string; opt: DownloadOption } | null>(null)
   const [downloading, setDownloading] = useState<string | null>(null)
 
-  // 로컬 메모리에 이미지 추가
-  const addLocalBlob = useCallback((file: File) => {
-    const url = URL.createObjectURL(file)
-    const item: BlobItem = {
-      url,
-      pathname: `${group.prefix}${file.name}`,
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
+  const refresh = useCallback(async () => {
+    try {
+      const items = await listBlobs(group.prefix)
+      setBlobs(items)
+    } catch {
+      // API unavailable
+    } finally {
+      setLoading(false)
     }
-    setBlobs(prev => [...prev, item])
-    setCacheBust(Date.now())
   }, [group.prefix])
 
+  useEffect(() => { refresh() }, [refresh])
+
+  const doUpload = useCallback(async (file: File) => {
+    if (uploading) return
+    setUploading(true)
+    try {
+      // exactOnly + maxCount 1 → 기존 파일 삭제 후 업로드
+      if (group.exactOnly && blobs.length > 0) {
+        for (const b of blobs) {
+          await deleteBlob(b.url)
+        }
+      }
+      await uploadBlob(file, group.prefix, file.name)
+      onBanner('success', '등록 완료')
+      await refresh()
+    } catch (err) {
+      onBanner('error', `업로드 실패: ${(err as Error).message}`)
+    } finally {
+      setUploading(false)
+    }
+  }, [uploading, blobs, group.exactOnly, group.prefix, onBanner, refresh])
+
   const handleFileSelected = useCallback((files: File[]) => {
+    if (uploading) return
     if (blobs.length + files.length > group.maxCount) {
       onBanner('error', `최대 ${group.maxCount}개까지`)
       return
@@ -174,32 +202,35 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
         }
         const ext = file.name.match(/\.\w+$/)?.[0] || '.png'
         const renamed = new File([file], `${group.fileBaseName}${ext}`, { type: file.type })
-        // exactOnly는 1개만 — 기존 것 교체
-        setBlobs([])
-        addLocalBlob(renamed)
-        onBanner('success', '추가 완료')
+        doUpload(renamed)
       }
       img.src = URL.createObjectURL(file)
     } else {
       setCropFile(file)
     }
-  }, [blobs, group.maxCount, group.exactOnly, group.storeWidth, group.storeHeight, group.fileBaseName, onBanner, addLocalBlob])
+  }, [uploading, blobs, group.maxCount, group.exactOnly, group.storeWidth, group.storeHeight, group.fileBaseName, onBanner, doUpload])
 
   const handleCropped = useCallback((croppedFile: File) => {
     setCropFile(null)
     const ext = croppedFile.name.match(/\.\w+$/)?.[0] || '.png'
     const num = String(blobs.length + 1).padStart(2, '0')
     const named = new File([croppedFile], `${group.fileBaseName}_${num}${ext}`, { type: croppedFile.type })
-    addLocalBlob(named)
-    onBanner('success', '추가 완료')
-  }, [blobs.length, group.fileBaseName, onBanner, addLocalBlob])
+    doUpload(named)
+  }, [blobs.length, group.fileBaseName, doUpload])
 
-  const handleDelete = useCallback((url: string) => {
+  const handleDelete = useCallback(async (url: string) => {
     if (!confirm('삭제하시겠습니까?')) return
-    URL.revokeObjectURL(url)
-    setBlobs(prev => prev.filter(b => b.url !== url))
-    onBanner('success', '삭제 완료')
-  }, [onBanner])
+    setDeleting(prev => new Set(prev).add(url))
+    try {
+      await deleteBlob(url)
+      onBanner('success', '삭제 완료')
+      await refresh()
+    } catch (err) {
+      onBanner('error', `삭제 실패: ${(err as Error).message}`)
+    } finally {
+      setDeleting(prev => { const next = new Set(prev); next.delete(url); return next })
+    }
+  }, [onBanner, refresh])
 
   const handleDownload = useCallback(async (blob: BlobItem, opt: DownloadOption) => {
     const key = `${blob.url}-${opt.platform}`
@@ -247,7 +278,8 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
           <>
             <button className="category-add-btn"
               onClick={(e) => { e.stopPropagation(); addRef.current?.click() }}
-              title="추가">+</button>
+              disabled={uploading}
+              title="추가">{uploading ? '...' : '+'}</button>
             <input ref={addRef} type="file" accept={group.accept}
               multiple={group.maxCount > 1} style={{ display: 'none' }}
               onChange={(e) => { if (e.target.files) handleFileSelected(Array.from(e.target.files)); e.target.value = '' }} />
@@ -256,18 +288,22 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
       </div>
 
       {!collapsed && (
-        blobs.length === 0 ? (
+        loading ? (
+          <div className="empty">로딩 중...</div>
+        ) : blobs.length === 0 ? (
           <div className="empty">업로드된 이미지가 없습니다</div>
         ) : (
           <div className="lp-cards">
             {blobs.map((b) => {
               const fname = getFilename(b.pathname)
+              const isBusyDelete = deleting.has(b.url)
               return (
-                <div key={b.url} className="lp-card">
+                <div key={b.url} className={`lp-card${isBusyDelete ? ' busy' : ''}`}>
                   <div className="lp-card-preview">
-                    <LazyImage src={`${b.url}?v=${cacheBust}`} alt={fname}
+                    <LazyImage src={proxyUrl(b.url)} alt={fname}
                       style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                    <button className="lp-delete-corner" onClick={() => handleDelete(b.url)} title="삭제">&times;</button>
+                    <button className="lp-delete-corner" onClick={() => handleDelete(b.url)}
+                      disabled={isBusyDelete} title="삭제">&times;</button>
                   </div>
                   <div className="lp-card-body">
                     {!group.exactOnly && (
@@ -307,6 +343,13 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
         )
       )}
 
+      {uploading && (
+        <div style={{ textAlign: 'center', padding: '12px', color: 'var(--text-secondary)' }}>
+          <div className="upload-spinner" style={{ display: 'inline-block', marginRight: 8 }} />
+          업로드 중...
+        </div>
+      )}
+
       {cropFile && (
         <ImageCropper
           file={cropFile}
@@ -319,7 +362,7 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
 
       {downloadCropUrl && (
         <DownloadCropper
-          imageUrl={downloadCropUrl.url}
+          imageUrl={proxyUrl(downloadCropUrl.url)}
           sourceWidth={group.storeWidth}
           sourceHeight={group.storeHeight}
           targetWidth={downloadCropUrl.opt.width}
