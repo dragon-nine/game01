@@ -1372,3 +1372,80 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Shared Files: Breadcrumbs & Folder ── */
+.sf-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.sf-breadcrumb-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sf-breadcrumb-btn:hover {
+  background: var(--accent-light);
+}
+
+.sf-breadcrumb-sep {
+  color: var(--text-tertiary);
+  margin: 0 2px;
+}
+
+.sf-breadcrumb-current {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sf-new-folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.sf-new-folder-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.sf-new-folder-input:focus {
+  border-color: var(--accent);
+}
+
+.sf-new-folder-ok {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sf-new-folder-cancel {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}

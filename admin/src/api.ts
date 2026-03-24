@@ -9,6 +9,12 @@ export async function listBlobs(prefix: string): Promise<BlobItem[]> {
   return data.blobs;
 }
 
+export async function listFolder(prefix: string): Promise<{ blobs: BlobItem[]; folders: string[] }> {
+  const res = await fetch(`${API_BASE}/blob-list?prefix=${encodeURIComponent(prefix)}&delimiter=/`);
+  if (!res.ok) throw new Error(`List failed: ${res.statusText}`);
+  return res.json();
+}
+
 export async function uploadBlob(file: File, prefix: string, filename?: string): Promise<BlobItem> {
   const name = filename || file.name;
   const res = await fetch(
