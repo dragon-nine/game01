@@ -59,7 +59,12 @@ export class BootScene extends Phaser.Scene {
     // Menu BGM
     const bgmMuted = localStorage.getItem('bgmMuted') === 'true';
     try {
-      if (!this.sound.get('bgm-menu')) {
+      const existing = this.sound.get('bgm-menu');
+      if (existing) {
+        if (!bgmMuted && !existing.isPlaying) {
+          (existing as Phaser.Sound.WebAudioSound).play();
+        }
+      } else {
         const menuBgm = this.sound.add('bgm-menu', { loop: true, volume: 0.4 });
         if (!bgmMuted) menuBgm.play();
       }
