@@ -38,6 +38,7 @@ interface NavItem {
 interface GameSection {
   key: string
   title: string
+  subtitle: string
   gameUrl: string
   items: NavItem[]
 }
@@ -45,7 +46,8 @@ interface GameSection {
 const GAMES: GameSection[] = [
   {
     key: 'game01',
-    title: 'game01 - 직장인 잔혹시',
+    title: 'GAME01',
+    subtitle: '직장인 잔혹사 : 퇴근길',
     gameUrl: '/game01/',
     items: [
       { id: 'game01-assets', icon: <Palette size={ICON_SIZE} />, label: '에셋 관리' },
@@ -55,7 +57,8 @@ const GAMES: GameSection[] = [
   },
   {
     key: 'game02',
-    title: 'game02 - (준비중)',
+    title: 'GAME02',
+    subtitle: '준비중',
     gameUrl: '/game02/',
     items: [
       { id: 'game02-assets', icon: <Palette size={ICON_SIZE} />, label: '에셋 관리' },
@@ -128,7 +131,10 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
           <div key={game.key} className="sidebar-game-group">
             <button className="sidebar-section-btn" onClick={() => toggle(game.key)}>
               <span className={`sidebar-chevron${collapsed[game.key] ? '' : ' open'}`}>&#9656;</span>
-              <span>{game.title}</span>
+              <span className="sidebar-section-label">
+                <span className="sidebar-section-title">{game.title}</span>
+                <span className="sidebar-section-subtitle">{game.subtitle}</span>
+              </span>
             </button>
             {!collapsed[game.key] && (
               <>

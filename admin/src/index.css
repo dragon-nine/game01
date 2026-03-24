@@ -148,6 +148,27 @@ body {
 
 .sidebar-section-btn:hover { color: var(--text-secondary); }
 
+.sidebar-section-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-section-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .sidebar-chevron {
   display: inline-block;
   transition: transform 0.15s;
