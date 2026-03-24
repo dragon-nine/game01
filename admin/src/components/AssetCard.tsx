@@ -41,8 +41,8 @@ export default function AssetCard({ blob, isDeleting, onDelete, onReplace }: Pro
   const fileRef = useRef<HTMLInputElement>(null)
   const audio = isAudio(blob.pathname)
   const filename = getFilename(blob.pathname)
-  const cacheBust = blob.uploadedAt ? `?t=${new Date(blob.uploadedAt).getTime()}` : ''
-  const imgUrl = blob.url + cacheBust
+  const cacheBust = blob.uploadedAt ? `&t=${new Date(blob.uploadedAt).getTime()}` : ''
+  const imgUrl = blob.url + (blob.url.includes('?') ? cacheBust : cacheBust.replace('&', '?'))
 
   useEffect(() => {
     if (audio) return
