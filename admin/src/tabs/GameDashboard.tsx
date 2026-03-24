@@ -65,7 +65,7 @@ export default function GameDashboard({ onPageChange }: Props) {
           <div
             key={game.id}
             className={`game-dashboard-card${game.status === 'planned' ? ' planned' : ''}`}
-            onClick={() => game.status !== 'planned' && onPageChange(game.firstPage)}
+            onClick={() => game.status !== 'planned' && window.open(game.gameUrl, '_blank')}
           >
             <div className="game-dashboard-icon">
               {icons[game.id] ? (
