@@ -104,20 +104,16 @@ function triggerDownload(blobUrl: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
 }
 
-function proxyUrl(url: string): string {
-  return `/api/blob-image?url=${encodeURIComponent(url)}`
-}
-
 // Download original file as-is
 async function downloadOriginal(url: string, filename: string) {
-  const res = await fetch(proxyUrl(url))
+  const res = await fetch(url)
   const data = await res.blob()
   triggerDownload(URL.createObjectURL(data), filename)
 }
 
 // Download resized version
 async function downloadResized(url: string, filename: string, targetW: number, targetH: number) {
-  const res = await fetch(proxyUrl(url))
+  const res = await fetch(url)
   const data = await res.blob()
   const img = new Image()
   await new Promise<void>((resolve, reject) => {
@@ -237,16 +233,17 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
     if (downloading) return
     setDownloading(key)
     try {
+      const dlUrl = blob.downloadUrl || blob.url
       const origName = getFilename(blob.pathname)
       const ext = origName.match(/\.\w+$/)?.[0] || '.png'
       const platformTag = opt.platform === '토스' ? 'toss' : 'google_play'
       const dlName = `${group.fileBaseName}_${platformTag}${ext}`
       if (opt.width === group.storeWidth && opt.height === group.storeHeight) {
-        await downloadOriginal(blob.url, dlName)
+        await downloadOriginal(dlUrl, dlName)
       } else if (opt.mode === 'resize') {
-        await downloadResized(blob.url, dlName, opt.width, opt.height)
+        await downloadResized(dlUrl, dlName, opt.width, opt.height)
       } else {
-        setDownloadCropUrl({ url: blob.url, filename: dlName, opt })
+        setDownloadCropUrl({ url: dlUrl, filename: dlName, opt })
       }
     } finally {
       setDownloading(null)
@@ -258,8 +255,9 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
     if (downloading) return
     setDownloading(key)
     try {
+      const dlUrl = blob.downloadUrl || blob.url
       const fname = getFilename(blob.pathname)
-      await downloadOriginal(blob.url, fname)
+      await downloadOriginal(dlUrl, fname)
     } finally {
       setDownloading(null)
     }
@@ -300,7 +298,7 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
               return (
                 <div key={b.url} className={`lp-card${isBusyDelete ? ' busy' : ''}`}>
                   <div className="lp-card-preview">
-                    <LazyImage src={proxyUrl(b.url)} alt={fname}
+                    <LazyImage src={b.url} alt={fname}
                       style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     <button className="lp-delete-corner" onClick={() => handleDelete(b.url)}
                       disabled={isBusyDelete} title="삭제">&times;</button>
@@ -362,7 +360,7 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
 
       {downloadCropUrl && (
         <DownloadCropper
-          imageUrl={proxyUrl(downloadCropUrl.url)}
+          imageUrl={downloadCropUrl.url}
           sourceWidth={group.storeWidth}
           sourceHeight={group.storeHeight}
           targetWidth={downloadCropUrl.opt.width}
