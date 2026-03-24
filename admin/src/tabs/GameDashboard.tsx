@@ -1,10 +1,12 @@
+import { useState, useEffect } from 'react'
+import { listBlobs } from '../api'
 import type { PageId } from '../App'
 
 interface GameInfo {
   id: string
   name: string
   desc: string
-  icon: string | null
+  iconPrefix: string
   gameUrl: string
   firstPage: PageId
   status: 'live' | 'dev' | 'planned'
@@ -15,7 +17,7 @@ const GAMES: GameInfo[] = [
     id: 'game01',
     name: '직장인 잔혹사 : 퇴근길',
     desc: '퇴근길은 만만치 않다! 2레인 도로를 달리며 장애물을 피하는 캐주얼 러너 게임.',
-    icon: '/images/game01-icon.png',
+    iconPrefix: 'launch/game01/icon/',
     gameUrl: '/game01/',
     firstPage: 'game01-assets',
     status: 'live',
@@ -24,7 +26,7 @@ const GAMES: GameInfo[] = [
     id: 'game02',
     name: 'game02',
     desc: '준비중',
-    icon: null,
+    iconPrefix: 'launch/game02/icon/',
     gameUrl: '/game02/',
     firstPage: 'game02-assets',
     status: 'planned',
@@ -42,6 +44,21 @@ interface Props {
 }
 
 export default function GameDashboard({ onPageChange }: Props) {
+  const [icons, setIcons] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    GAMES.forEach(async (game) => {
+      try {
+        const blobs = await listBlobs(game.iconPrefix)
+        if (blobs.length > 0) {
+          setIcons((prev) => ({ ...prev, [game.id]: blobs[0].url }))
+        }
+      } catch {
+        // no icon
+      }
+    })
+  }, [])
+
   return (
     <div>
       <h1 className="page-title">Games</h1>
@@ -54,8 +71,8 @@ export default function GameDashboard({ onPageChange }: Props) {
             onClick={() => game.status !== 'planned' && onPageChange(game.firstPage)}
           >
             <div className="game-dashboard-icon">
-              {game.icon ? (
-                <img src={game.icon} alt={game.name} />
+              {icons[game.id] ? (
+                <img src={icons[game.id]} alt={game.name} />
               ) : (
                 <div className="game-dashboard-icon-placeholder">🎮</div>
               )}
