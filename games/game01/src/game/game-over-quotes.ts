@@ -1,11 +1,12 @@
-/** 게임오버 멘트 — 랜덤 표시 */
+/** 게임오버 멘트 — R2 원격 → 로컬 fallback */
 
 interface Quote {
   line1: string
   line2?: string
 }
 
-const QUOTES: Quote[] = [
+/** 로컬 기본 멘트 (R2 fetch 실패 시 사용) */
+const DEFAULT_QUOTES: Quote[] = [
   { line1: '괜찮아.', line2: '원래 월요일이 그래.' },
   { line1: '퇴근은 쉬운 게 아니야...', line2: '인생이 원래 그래.' },
   { line1: '아직 짐도 안 쌌잖아.', line2: '다시 도전해봐.' },
@@ -26,39 +27,27 @@ const QUOTES: Quote[] = [
   { line1: '여기서 멈출 거야?', line2: '진짜?' },
   { line1: '이 정도면 잘한 건데...', line2: '만족해?' },
   { line1: '지하철역이 바로 앞이었어.', line2: '한 번만 더.' },
-  { line1: '방금 그건 실수였어.', line2: '원래 이것보다 잘하잖아.' },
-  { line1: '300 넘기면 진짜 고수인데...', line2: '아쉽다.' },
-  { line1: '택시 타면 되는데', line2: '택시비가 아까워서 걷다가...' },
-  { line1: '이 기록 아까워서', line2: '그냥 끌 수 있어?' },
-  { line1: '다음 판이 신기록일 수도 있어.', line2: '진짜로.' },
-  { line1: '거의 다 왔었는데...', line2: '진짜 아깝다.' },
-  { line1: '이 정도면 상위 10%야.', line2: '근데 1%는 아니지.' },
-  { line1: '집 앞 편의점이 보였어.', line2: '한 발만 더 가면 돼.' },
-  { line1: '다른 사람들은 여기서 포기하더라.', line2: '너는 달라.' },
-  { line1: '퇴근의 달인인데...', line2: '달인도 넘어지는구나.' },
-  { line1: '아파트 엘리베이터 앞이었는데.', line2: '억울하지 않아?' },
-  { line1: '현관 비밀번호 첫 번째 자리까지', line2: '눌렀는데...' },
-  { line1: '400 넘기면 전설이야.', line2: '한 번만 더 해볼래?' },
-  { line1: '오늘 야근 수당은 없지만', line2: '경험치는 쌓였어.' },
-  { line1: '여기까지 온 사람 거의 없어.', line2: '근데 끝이 아니야.' },
-  { line1: '퇴근 센스 인정.', line2: '근데 아직 현관문은 안 열렸어.' },
-  { line1: '이 정도면', line2: '회사가 너를 못 보내는 거야.' },
-  { line1: '대단해.', line2: '근데 아직 신발도 안 벗었잖아.' },
-  { line1: '500 넘기면 영원히 기록에 남아.', line2: '한 번만 더.' },
-  { line1: '이 기록 무너뜨릴 수 있는 건', line2: '너뿐이야.' },
-  { line1: '이불이 부르고 있어.', line2: '응답해줘.' },
-  { line1: '퇴근은 포기하는 순간', line2: '끝나는 거야.' },
-  { line1: '전설의 야근러...', line2: '이대로 끝낼 순 없잖아.' },
-  { line1: '퇴근의 신이 시험하고 있어.', line2: '다시 한번?' },
-  { line1: '여기까지 온 당신에게 경의를.', line2: '근데 더 갈 수 있잖아.' },
-  { line1: '이 기록 보고', line2: '개발자도 놀랐을 거야.' },
-  { line1: '당신의 퇴근을', line2: '온 세상이 응원하고 있어.' },
-  { line1: '집이 기다리고 있어.', line2: '포기하지 마.' },
-  { line1: '이 기록은 영원히 남아.', line2: '근데 더 높이 갈 수 있어.' },
-  { line1: '아직 퇴근 안 한 거 알고 있어.', line2: '다시 가자.' },
 ]
 
+let cachedQuotes: Quote[] | null = null
+
+/** 앱 시작 시 R2에서 멘트를 미리 로드 */
+export async function loadQuotes(): Promise<void> {
+  try {
+    const res = await fetch('/api/json-store?key=game01/content/quotes.json')
+    if (res.ok) {
+      const { data } = await res.json()
+      if (Array.isArray(data) && data.length > 0) {
+        cachedQuotes = data
+      }
+    }
+  } catch {
+    // R2 실패 → 로컬 기본값 사용
+  }
+}
+
 export function getRandomQuote(): string {
-  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)]
+  const quotes = cachedQuotes || DEFAULT_QUOTES
+  const q = quotes[Math.floor(Math.random() * quotes.length)]
   return q.line2 ? `${q.line1}\n${q.line2}` : q.line1
 }

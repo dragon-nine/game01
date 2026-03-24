@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import { createGameConfig } from '../../game/config';
 import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
+import { loadQuotes } from '../../game/game-over-quotes';
 import { MainScreen } from '../overlays/MainScreen';
 import { SettingsOverlay } from '../overlays/SettingsOverlay';
 import { PauseOverlay } from '../overlays/PauseOverlay';
@@ -17,6 +18,8 @@ export function GameContainer() {
 
   useEffect(() => {
     if (gameRef.current) return;
+
+    loadQuotes(); // R2에서 게임오버 멘트 미리 로드
 
     const config = createGameConfig(GAME_CONTAINER_ID);
     gameRef.current = new Phaser.Game(config);

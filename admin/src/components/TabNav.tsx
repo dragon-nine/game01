@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactNode } from 'react'
 import type { PageId } from '../App'
 import {
   CheckSquare, StickyNote, FolderOpen,
-  Palette, LayoutGrid, Rocket, Gamepad2, ExternalLink,
+  Palette, LayoutGrid, Rocket, Gamepad2, ExternalLink, FileText,
 } from 'lucide-react'
 
 declare const __BUILD_TIME__: string
@@ -53,6 +53,7 @@ const GAMES: GameSection[] = [
       { id: 'game01-assets', icon: <Palette size={ICON_SIZE} />, label: '에셋 관리' },
       { id: 'game01-layout', icon: <LayoutGrid size={ICON_SIZE} />, label: '레이아웃 편집' },
       { id: 'game01-launch', icon: <Rocket size={ICON_SIZE} />, label: '출시 준비' },
+      { id: 'game01-content', icon: <FileText size={ICON_SIZE} />, label: '콘텐츠 관리' },
     ],
   },
   {

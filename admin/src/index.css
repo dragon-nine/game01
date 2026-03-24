@@ -1741,3 +1741,136 @@ body {
 @media (max-width: 768px) {
   .cl-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Content Tab ── */
+.ct-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+}
+
+.ct-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ct-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ct-num {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ct-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ct-line1 {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.ct-line2 {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.ct-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.ct-item:hover .ct-actions { opacity: 1; }
+
+.ct-edit-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.ct-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.ct-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+}
+
+.ct-delete-btn:hover { color: var(--danger); }
+
+.ct-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  width: 100%;
+}
+
+.ct-edit-fields {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.ct-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+.ct-input:focus { border-color: var(--accent); }
+
+.ct-edit-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ct-save-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ct-cancel-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
