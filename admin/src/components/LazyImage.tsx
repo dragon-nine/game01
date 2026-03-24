@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface Props {
   src: string
@@ -7,13 +7,32 @@ interface Props {
   className?: string
 }
 
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000
+
 export default function LazyImage({ src, alt, style, className }: Props) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+  const retryCount = useRef(0)
+  const imgRef = useRef<HTMLImageElement>(null)
 
-  // Reset status when src changes (handles cache-busted URLs)
   useEffect(() => {
     setStatus('loading')
+    retryCount.current = 0
   }, [src])
+
+  const handleError = () => {
+    if (retryCount.current < MAX_RETRIES) {
+      retryCount.current++
+      setTimeout(() => {
+        if (imgRef.current) {
+          imgRef.current.src = ''
+          imgRef.current.src = src
+        }
+      }, RETRY_DELAY * retryCount.current)
+    } else {
+      setStatus('error')
+    }
+  }
 
   return (
     <>
@@ -24,6 +43,7 @@ export default function LazyImage({ src, alt, style, className }: Props) {
         <div className="img-error" style={style}>!</div>
       )}
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         className={className}
@@ -32,7 +52,7 @@ export default function LazyImage({ src, alt, style, className }: Props) {
           display: status === 'loaded' ? undefined : 'none',
         }}
         onLoad={() => setStatus('loaded')}
-        onError={() => setStatus('error')}
+        onError={handleError}
       />
     </>
   )
