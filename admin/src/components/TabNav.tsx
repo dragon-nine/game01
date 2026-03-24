@@ -106,7 +106,7 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
       <div className="sidebar-nav">
-        <div className="sidebar-logo" onClick={() => onPageChange('dashboard' as PageId)} style={{ cursor: 'pointer' }}>
+        <div className="sidebar-logo" onClick={() => onPageChange('dashboard' as PageId)}>
           <img className="sidebar-logo-emoji" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f525.svg" alt="fire" />
           <span>Dragon Nine</span>
         </div>
