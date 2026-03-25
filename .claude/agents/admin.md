@@ -4,15 +4,25 @@
 Admin 페이지 UI/UX 개발, 에셋 관리, 레이아웃 에디터
 
 ## 구조
-- 위치: `admin/` (Vite + React + TypeScript)
+- 위치: `admin/` (Vite + React 19 + TypeScript)
 - 빌드 출력: `dist/admin/`
 - `base: '/admin/'`
 
-## 사이드바 레이아웃
-- 왼쪽 사이드바(240px) + 오른쪽 콘텐츠
-- 게임별 메뉴 그룹핑 (game01, game02...)
-- URL 파라미터: `?page=game01-assets`
-- 하단에 배포 시간 표시 (빌드 타임 주입)
+## 페이지 구성
+- `dashboard` — GameDashboard (게임 카드 그리드)
+- `checklist` — TodoHomePage (Heart Rush 스타일 TO DO 체크리스트)
+- `memo` — MemoTab (팀 메모)
+- `shared-files` — SharedFilesTab (공유 파일)
+- `game01-assets` — GameAssetsTab (에셋 관리)
+- `game01-layout` — LayoutEditorTab (레이아웃 편집)
+- `game01-launch` — LaunchPrepTab (출시 준비 이미지)
+- `game01-content` — ContentTab (콘텐츠 관리)
+
+## 사이드바
+- Heart Rush 스타일 (Pretendard 폰트, 180px 고정)
+- COMMON 섹션: 체크리스트, 메모, 공유 파일
+- GAME01: 항상 펼침 / GAME02: 접힘
+- 하단에 빌드 시간 표시
 
 ## UI 원칙
 - **사이드바** 레이아웃 (탭 ❌)
@@ -24,18 +34,15 @@ Admin 페이지 UI/UX 개발, 에셋 관리, 레이아웃 에디터
 - 가이드라인 ON/OFF 토글
 - 마이너스 간격 허용
 
-## 레이아웃 에디터
-- 390×844 폰 프리뷰 (실제 배경/에셋 표시)
-- 그룹/앵커별 인스펙터
-- 텍스트 스타일 (fontSize, color, stroke)
-- 로컬 저장: `/api/save-layout` → `public/layout/`
-- Blob 저장: Vercel Blob API (fallback)
+## 데이터 저장
+- 체크리스트 (TodoHomePage): localStorage (`game01-todo-done`)
+- 기존 체크리스트/메모: R2 JSON store (`admin/checklists.json`, `admin/memos.json`)
+- 레이아웃: `/api/save-layout` → `public/layout/`
 
 ## 로컬 개발
 - `npm run dev:admin` → localhost:5173
 - vite config가 game01 dist + public 에셋 서빙
 - `/game-assets/` → `games/game01/public/`
-- `/admin` trailing slash 자동 리다이렉트
 
 ## 스토어 이미지 스펙
 
