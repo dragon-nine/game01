@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { getJson, putJson } from '../api'
 
 // ---------------------------------------------------------------------------
 // Data types
@@ -147,24 +148,50 @@ const CHECK_SQUARE_D = 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2
 // LocalStorage persistence
 // ---------------------------------------------------------------------------
 
-const TODO_STORAGE_KEY = 'game01-todo-done'
+const R2_KEY = 'admin/game01-todo-done.json'
+const LOCAL_KEY = 'game01-todo-done'
 
 function useTodoDone() {
   const [doneSet, setDoneSet] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem(TODO_STORAGE_KEY)
+      const raw = localStorage.getItem(LOCAL_KEY)
       return raw ? new Set(JSON.parse(raw)) : new Set()
     } catch { return new Set() }
   })
+  const [synced, setSynced] = useState(false)
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  // R2에서 초기 로드
+  useEffect(() => {
+    getJson<string[]>(R2_KEY).then(data => {
+      if (data) {
+        const merged = new Set(data)
+        setDoneSet(merged)
+        localStorage.setItem(LOCAL_KEY, JSON.stringify([...merged]))
+      }
+      setSynced(true)
+    }).catch(() => setSynced(true))
+  }, [])
+
+  // R2에 디바운스 저장 (500ms)
+  const saveToR2 = useCallback((next: Set<string>) => {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify([...next]))
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      putJson(R2_KEY, [...next]).catch(() => {/* R2 실패 시 localStorage만 유지 */})
+    }, 500)
+  }, [])
+
   const toggle = (key: string) => {
     setDoneSet(prev => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key); else next.add(key)
-      localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify([...next]))
+      saveToR2(next)
       return next
     })
   }
-  return { doneSet, toggle }
+
+  return { doneSet, toggle, synced }
 }
 
 // ---------------------------------------------------------------------------
@@ -172,7 +199,7 @@ function useTodoDone() {
 // ---------------------------------------------------------------------------
 
 export default function TodoHomePage() {
-  const { doneSet, toggle } = useTodoDone()
+  const { doneSet, toggle, synced } = useTodoDone()
 
   const allItems = TODO_PHASES.flatMap((p, pi) =>
     p.items.filter(it => it.indent === undefined || it.indent === 0).map((_, ii) => `${pi}-${ii}`)
@@ -185,7 +212,10 @@ export default function TodoHomePage() {
       <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
         <LucideIcon d={CHECK_SQUARE_D} size={22} color="#3182F6" /> TO DO
       </h2>
-      <div style={{ fontSize: 13, color: '#8B95A1', marginBottom: 20 }}>직장인 잔혹사 전체 개발 체크리스트</div>
+      <div style={{ fontSize: 13, color: '#8B95A1', marginBottom: 20 }}>
+        직장인 잔혹사 전체 개발 체크리스트
+        {!synced && <span style={{ marginLeft: 8, fontSize: 11, color: '#B0B8C1' }}>동기화 중...</span>}
+      </div>
 
       {/* 전체 진행률 */}
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E8E8ED', padding: '20px 24px', marginBottom: 20 }}>
