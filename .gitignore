@@ -13,3 +13,5 @@ platforms/
 .knownPackages
 .granite
 .env*.local
+.env.blob
+.env.prod

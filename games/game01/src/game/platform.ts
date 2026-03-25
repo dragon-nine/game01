@@ -1,5 +1,3 @@
-import { Capacitor } from '@capacitor/core';
-
 /**
  * 플랫폼 감지 — 토스 인앱 vs 구글(웹/네이티브)
  *
@@ -28,8 +26,7 @@ export function detectPlatform(): Platform {
   return 'google';
 }
 
-/** 현재 플랫폼 (앱 시작 시 1회 결정) */
-export const currentPlatform: Platform = detectPlatform();
+const currentPlatform: Platform = detectPlatform();
 
 export function isToss(): boolean {
   return currentPlatform === 'toss';
@@ -37,8 +34,4 @@ export function isToss(): boolean {
 
 export function isGoogle(): boolean {
   return currentPlatform === 'google';
-}
-
-export function isNative(): boolean {
-  return Capacitor.isNativePlatform();
 }

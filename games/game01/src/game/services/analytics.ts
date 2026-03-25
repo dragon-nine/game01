@@ -4,11 +4,6 @@ import { isToss } from '../platform';
  * 애널리틱스 서비스 — 토스 환경에서만 동작, 그 외 무시
  */
 
-export function safeAnalytics(fn: () => void): void {
-  if (!isToss()) return;
-  try { fn(); } catch { /* 토스 외부 환경에서는 무시 */ }
-}
-
 export async function logEvent(name: string, params: Record<string, string | number | boolean> = {}): Promise<void> {
   if (!isToss()) return;
   try {

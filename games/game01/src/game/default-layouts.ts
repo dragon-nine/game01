@@ -42,26 +42,3 @@ export const DEFAULT_LAYOUTS: Record<string, ScreenLayout> = {
     ],
   },
 }
-
-/** Asset blob paths for layout preview */
-export const ASSET_PATHS: Record<string, Record<string, string>> = {
-  'main-screen': {
-    'main-text': 'game01/main-screen/main-text.png',
-    'main-char': 'game01/main-screen/main-char.png',
-    'main-btn': 'game01/main-screen/main-btn.png',
-    'btn-settings': 'game01/ui/btn-settings.png',
-  },
-  'game-over': {
-    'go-rabbit': 'game01/game-over-screen/gameover-rabbit.png',
-    'go-btn-revive': 'game01/game-over-screen/btn-revive.png',
-    'go-btn-home': 'game01/game-over-screen/btn-home.png',
-    'go-btn-challenge': 'game01/game-over-screen/btn-challenge.png',
-    'go-btn-ranking': 'game01/game-over-screen/btn-ranking.png',
-  },
-  'gameplay': {
-    'gauge-bar': 'game01/ui/gauge-empty.png',
-    'btn-pause': 'game01/ui/btn-pause.png',
-    'btn-switch': 'game01/ui/btn-switch.png',
-    'btn-forward': 'game01/ui/btn-forward.png',
-  },
-}

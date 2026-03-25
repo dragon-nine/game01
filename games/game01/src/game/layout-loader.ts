@@ -26,11 +26,6 @@ function parseLayout(data: ScreenLayout | { elements?: LayoutElement[]; groupVAl
   }
 }
 
-export async function loadLayout(gameId: string, screen: string): Promise<LayoutElement[]> {
-  const loaded = await loadLayoutFull(gameId, screen)
-  return loaded.elements
-}
-
 export async function loadLayoutFull(_gameId: string, screen: string): Promise<LoadedLayout> {
   if (layoutCache.has(screen)) return layoutCache.get(screen)!
 
@@ -52,6 +47,3 @@ export async function loadLayoutFull(_gameId: string, screen: string): Promise<L
   return loaded
 }
 
-export function clearLayoutCache() {
-  layoutCache.clear()
-}
