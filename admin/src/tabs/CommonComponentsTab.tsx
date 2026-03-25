@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import GameButton from '../components/common/GameButton'
 import ChallengeModal from '../components/common/ChallengeModal'
+import MainTitle from '../components/common/MainTitle'
 
 export default function CommonComponentsTab() {
   // GameButton state
@@ -17,6 +18,17 @@ export default function CommonComponentsTab() {
   const [paddingX, setPaddingX] = useState(48)
   const [paddingY, setPaddingY] = useState(16)
 
+  // MainTitle state
+  const [titleLine1, setTitleLine1] = useState('직장인 잔혹사')
+  const [titleLine2, setTitleLine2] = useState('당신의 하루를 견뎌내세요...')
+  const [titleLine1Size, setTitleLine1Size] = useState(52)
+  const [titleLine2Size, setTitleLine2Size] = useState(22)
+  const [titleGradFrom, setTitleGradFrom] = useState('#1a6fc4')
+  const [titleGradTo, setTitleGradTo] = useState('#7ec8e3')
+  const [titleStrokeW, setTitleStrokeW] = useState(6)
+  const [titleStrokeColor, setTitleStrokeColor] = useState('#000000')
+  const [titleLine2Color, setTitleLine2Color] = useState('#ffffff')
+
   // ChallengeModal state
   const [modalScore, setModalScore] = useState(1000)
   const [modalImage, setModalImage] = useState('')
@@ -27,6 +39,73 @@ export default function CommonComponentsTab() {
   return (
     <div style={{ padding: 24 }}>
       <h2 style={{ marginBottom: 24, fontSize: 20, fontWeight: 600 }}>Common Components</h2>
+
+      {/* ── MainTitle Section ── */}
+      <section style={{ marginBottom: 48 }}>
+        <h3 style={sectionTitle}>MainTitle (메인 타이틀)</h3>
+        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 400px' }}>
+            <div style={{
+              background: 'linear-gradient(to bottom, #2a0c10, #000)',
+              borderRadius: 12,
+              padding: 48,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 200,
+            }}>
+              <MainTitle
+                line1={titleLine1}
+                line2={titleLine2}
+                line1Size={titleLine1Size}
+                line2Size={titleLine2Size}
+                gradientFrom={titleGradFrom}
+                gradientTo={titleGradTo}
+                strokeWidth={titleStrokeW}
+                strokeColor={titleStrokeColor}
+                line2Color={titleLine2Color}
+              />
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <span style={{ fontSize: 13, color: '#666' }}>Original (main-text.png)</span>
+              <div style={{ background: 'linear-gradient(to bottom, #2a0c10, #000)', borderRadius: 12, padding: 24, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/game01/main-screen/main-text.png" alt="main-text original" style={{ maxWidth: '100%', height: 'auto' }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={controlsBox}>
+            <label style={labelStyle}>
+              <span>Line 1 (타이틀)</span>
+              <input type="text" value={titleLine1} onChange={(e) => setTitleLine1(e.target.value)} style={inputStyle} />
+            </label>
+            <label style={labelStyle}>
+              <span>Line 2 (서브타이틀)</span>
+              <input type="text" value={titleLine2} onChange={(e) => setTitleLine2(e.target.value)} style={inputStyle} />
+            </label>
+            <label style={labelStyle}>
+              <span>Line 1 Size: {titleLine1Size}px</span>
+              <input type="range" min={24} max={80} value={titleLine1Size} onChange={(e) => setTitleLine1Size(+e.target.value)} />
+            </label>
+            <label style={labelStyle}>
+              <span>Line 2 Size: {titleLine2Size}px</span>
+              <input type="range" min={12} max={40} value={titleLine2Size} onChange={(e) => setTitleLine2Size(+e.target.value)} />
+            </label>
+            <label style={labelStyle}>
+              <span>Stroke Width: {titleStrokeW}px</span>
+              <input type="range" min={0} max={12} value={titleStrokeW} onChange={(e) => setTitleStrokeW(+e.target.value)} />
+            </label>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ ...labelStyle, flex: 1 }}><span>Grad From</span><input type="color" value={titleGradFrom} onChange={(e) => setTitleGradFrom(e.target.value)} /></label>
+              <label style={{ ...labelStyle, flex: 1 }}><span>Grad To</span><input type="color" value={titleGradTo} onChange={(e) => setTitleGradTo(e.target.value)} /></label>
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ ...labelStyle, flex: 1 }}><span>Stroke</span><input type="color" value={titleStrokeColor} onChange={(e) => setTitleStrokeColor(e.target.value)} /></label>
+              <label style={{ ...labelStyle, flex: 1 }}><span>Line 2</span><input type="color" value={titleLine2Color} onChange={(e) => setTitleLine2Color(e.target.value)} /></label>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── GameButton Section ── */}
       <section style={{ marginBottom: 48 }}>
