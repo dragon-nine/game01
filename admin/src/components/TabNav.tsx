@@ -59,7 +59,7 @@ const GAMES: GameSection[] = [
   {
     key: 'game02',
     title: 'GAME02',
-    subtitle: '준비중',
+    subtitle: '',
     gameUrl: '/game02/',
     items: [
       { id: 'game02-assets', icon: <Palette size={ICON_SIZE} />, label: '에셋 관리' },
@@ -88,15 +88,11 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
     return () => clearInterval(id)
   }, [])
 
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {}
-    GAMES.forEach((g) => {
-      const isActive = g.items.some((item) => item.id === activePage)
-      init[g.key] = !isActive
-    })
-    init['common'] = false
-    return init
-  })
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => ({
+    common: false,
+    game01: false,
+    game02: true,
+  }))
 
   const toggle = (key: string) => {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
