@@ -17,6 +17,7 @@ export function GameplayHUD() {
   const [score, setScore] = useState(0);
   const [timerPct, setTimerPct] = useState(1);
   const [pressedBtn, setPressedBtn] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(true);
 
   useEffect(() => {
     const unsub1 = gameBus.on('score-update', setScore);
@@ -25,10 +26,12 @@ export function GameplayHUD() {
   }, []);
 
   const handleSwitch = useCallback(() => {
+    setShowGuide(false);
     gameBus.emit('action-switch', undefined);
   }, []);
 
   const handleForward = useCallback(() => {
+    setShowGuide(false);
     gameBus.emit('action-forward', undefined);
   }, []);
 
@@ -175,6 +178,127 @@ export function GameplayHUD() {
           draggable={false}
         />
       </div>
+      {/* 튜토리얼 가이드 */}
+      {showGuide && (
+        <>
+          <style>{`
+            @keyframes guideGlow {
+              0%, 100% { opacity: 0.6; transform: scale(1); }
+              50% { opacity: 1; transform: scale(1.08); }
+            }
+            @keyframes guideArrowR {
+              0%, 100% { transform: translateX(0); }
+              50% { transform: translateX(6px); }
+            }
+            @keyframes guideArrowL {
+              0%, 100% { transform: translateX(0); }
+              50% { transform: translateX(-6px); }
+            }
+            @keyframes guideFadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+
+          {/* 우측: 전진 버튼 가이드 */}
+          {pos('btn-forward') && (() => {
+            const p = pos('btn-forward')!;
+            const cx = p.x - p.displayWidth * p.originX + p.displayWidth / 2;
+            const cy = p.y - p.displayHeight * p.originY + p.displayHeight / 2;
+            const r = Math.max(p.displayWidth, p.displayHeight) / 2;
+            return (
+              <>
+                {/* 글로우 링 */}
+                <div style={{
+                  position: 'absolute',
+                  left: cx - r - 6,
+                  top: cy - r - 6,
+                  width: (r + 6) * 2,
+                  height: (r + 6) * 2,
+                  borderRadius: '50%',
+                  border: '2px solid #00e5ff',
+                  boxShadow: '0 0 12px #00e5ff, 0 0 24px #00e5ff80, inset 0 0 12px #00e5ff40',
+                  animation: 'guideGlow 1.2s ease-in-out infinite, guideFadeIn 0.5s ease-out',
+                }} />
+                {/* 텍스트 + 화살표 */}
+                <div style={{
+                  position: 'absolute',
+                  right: window.innerWidth - (cx - r - 12),
+                  top: cy - 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  animation: 'guideFadeIn 0.5s ease-out',
+                }}>
+                  <span style={{
+                    color: '#fff',
+                    fontSize: 13 * scale,
+                    fontWeight: 700,
+                    fontFamily: 'GMarketSans, sans-serif',
+                    textShadow: '0 0 8px #00e5ff, 0 0 16px #00e5ff40',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    앞으로 한 칸 이동
+                  </span>
+                  <svg width="28" height="16" viewBox="0 0 28 16" style={{ animation: 'guideArrowR 0.8s ease-in-out infinite', filter: 'drop-shadow(0 0 4px #00e5ff)' }}>
+                    <rect x="0" y="6" width="16" height="4" rx="2" fill="#00e5ff" />
+                    <polygon points="16,2 28,8 16,14" fill="#00e5ff" />
+                  </svg>
+                </div>
+              </>
+            );
+          })()}
+
+          {/* 좌측: 회전 버튼 가이드 */}
+          {pos('btn-switch') && (() => {
+            const p = pos('btn-switch')!;
+            const cx = p.x - p.displayWidth * p.originX + p.displayWidth / 2;
+            const cy = p.y - p.displayHeight * p.originY + p.displayHeight / 2;
+            const r = Math.max(p.displayWidth, p.displayHeight) / 2;
+            return (
+              <>
+                {/* 글로우 링 (빨간색) */}
+                <div style={{
+                  position: 'absolute',
+                  left: cx - r - 6,
+                  top: cy - r - 6,
+                  width: (r + 6) * 2,
+                  height: (r + 6) * 2,
+                  borderRadius: '50%',
+                  border: '2px solid #ff3b3b',
+                  boxShadow: '0 0 12px #ff3b3b, 0 0 24px #ff3b3b80, inset 0 0 12px #ff3b3b40',
+                  animation: 'guideGlow 1.2s ease-in-out infinite, guideFadeIn 0.5s ease-out',
+                }} />
+                {/* 텍스트 + 화살표 */}
+                <div style={{
+                  position: 'absolute',
+                  left: cx + r + 12,
+                  top: cy - 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  animation: 'guideFadeIn 0.5s ease-out',
+                }}>
+                  <svg width="28" height="16" viewBox="0 0 28 16" style={{ animation: 'guideArrowL 0.8s ease-in-out infinite', filter: 'drop-shadow(0 0 4px #ff3b3b)' }}>
+                    <rect x="12" y="6" width="16" height="4" rx="2" fill="#ff3b3b" />
+                    <polygon points="12,2 0,8 12,14" fill="#ff3b3b" />
+                  </svg>
+                  <span style={{
+                    color: '#fff',
+                    fontSize: 13 * scale,
+                    fontWeight: 700,
+                    fontFamily: 'GMarketSans, sans-serif',
+                    textShadow: '0 0 8px #ff3b3b, 0 0 16px #ff3b3b40',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    회전하고 한 칸 이동
+                  </span>
+                </div>
+              </>
+            );
+          })()}
+        </>
+      )}
     </div>
   );
 }
