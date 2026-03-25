@@ -219,7 +219,7 @@ function TypographySection() {
                 {/* Preview */}
                 <div style={{
                   fontFamily: font.primary,
-                  fontSize: Math.min(ts.fontSize, 72),
+                  fontSize: ts.fontSize,
                   fontWeight: ts.fontWeight,
                   color: '#333',
                   WebkitTextStroke: ts.stroke ? `${ts.stroke}px rgba(0,0,0,0.2)` : undefined,
