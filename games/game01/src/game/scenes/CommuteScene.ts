@@ -292,11 +292,11 @@ export class CommuteScene extends Phaser.Scene {
       duration: 100, ease: 'Quad.easeOut',
     });
 
-    // 배경도 같이 스크롤 (도로와 동일한 속도)
+    // 배경 패럴랙스 스크롤 (도로보다 느리게 → 깊이감)
     if (this.bgTile) {
       this.tweens.add({
         targets: this.bgTile,
-        tilePositionY: this.bgTile.tilePositionY - scrollDelta,
+        tilePositionY: this.bgTile.tilePositionY - scrollDelta * 0.3,
         duration: 100, ease: 'Quad.easeOut',
       });
     }
