@@ -24,7 +24,7 @@ export default function CommonComponentsTab() {
         <div style={{ flex: '1 1 400px' }}>
           <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#888' }}>GameButton Preview</h3>
           <div style={{
-            background: '#111',
+            background: '#ffffff',
             borderRadius: 12,
             padding: 48,
             display: 'flex',
