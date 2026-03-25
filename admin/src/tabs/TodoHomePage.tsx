@@ -52,10 +52,12 @@ const TODO_PHASES: TodoPhase[] = [
     ],
   },
   {
-    phase: '④ 리더보드 & 소셜 (공통 기능)',
+    phase: '④ 자체 리더보드 & 소셜',
     items: [
-      { text: '리더보드 점수 제출 (플랫폼별 SDK 분기)', done: true, indent: 0 },
-      { text: '리더보드 UI 열기 (플랫폼별 SDK 분기)', done: true, indent: 0 },
+      { text: '리더보드 API 설계 (점수 제출/조회/랭킹)', done: false },
+      { text: '리더보드 백엔드 구현 (Vercel serverless + R2/DB)', done: false },
+      { text: '리더보드 UI 구현 (인게임 랭킹 화면)', done: false },
+      { text: '닉네임 설정 UI', done: false },
       { text: '카카오톡/웹 공유 (점수 + 도전 링크)', done: false },
       { text: '점수 카드 이미지 캡처 공유', done: false },
       { text: '친구 챌린지 (URL 딥링크)', done: false },
@@ -76,8 +78,6 @@ const TODO_PHASES: TodoPhase[] = [
     phase: '⑥ Google Play 출시',
     items: [
       { text: 'Google Play Console 게임 등록', done: false },
-      { text: 'Google Play Games 로그인 연동', done: false },
-      { text: 'Google Play Games leaderboardId 설정', done: false },
       { text: 'Firebase Analytics 연동 (GA4 이벤트 로깅)', done: false },
       { text: 'Capacitor/TWA 네이티브 래핑', done: false },
       { text: '스토어 스크린샷 (1080×2160, 최소 2장)', done: false },
@@ -92,7 +92,6 @@ const TODO_PHASES: TodoPhase[] = [
   {
     phase: '⑦ 토스 인앱 출시',
     items: [
-      { text: '토스 리더보드 실환경 테스트', done: false },
       { text: '토스 분석 이벤트 확인 (game_start, game_over 등)', done: true },
       { text: '토스 챌린지/공유 기능 연동', done: false },
       { text: '토스 스토어 스크린샷 (636×1048, 최소 3장)', done: false },
@@ -123,7 +122,7 @@ const TODO_PHASES: TodoPhase[] = [
       { text: '느린 네트워크 → 로딩 화면 정상 표시', done: false },
       { text: 'localStorage 초기화 후 첫 플레이 → 최고기록 정상', done: false },
       { text: '연속 추락 10회 → 셰이크+햅틱 정상', done: false },
-      { text: '리더보드 버튼 → 정상 오픈 (Google/토스 각각)', done: false },
+      { text: '자체 리더보드 → 점수 제출/조회/랭킹 정상 동작', done: false },
       { text: '공유 버튼 → 정상 동작 (Google/토스 각각)', done: false },
       { text: '다양한 해상도 테스트 (SE~Pro Max, 갤럭시)', done: false },
     ],
