@@ -253,34 +253,40 @@ export default function SharedFilesTab({ onBanner }: Props) {
 
   return (
     <div>
-      <div className="card">
-        <div className="category-header">
-          <div className="sf-breadcrumbs">
-            {breadcrumbs.map((crumb, i) => (
-              <span key={crumb.path}>
-                {i > 0 && <span className="sf-breadcrumb-sep">/</span>}
-                {i === breadcrumbs.length - 1 ? (
-                  <span className="sf-breadcrumb-current">{crumb.label}</span>
-                ) : (
-                  <button className="sf-breadcrumb-btn" onClick={() => setCurrentPath(crumb.path)}>
-                    {crumb.label}
-                  </button>
-                )}
-              </span>
-            ))}
-          </div>
-          <span className="section-count">{visibleFiles.length}개 파일</span>
+      {/* 페이지 헤더 */}
+      <div className="sf-page-header">
+        <div className="sf-header-left">
+          <h1 className="page-title" style={{ marginBottom: 0 }}>공유 파일</h1>
+          {currentPath !== ROOT && (
+            <div className="sf-breadcrumbs">
+              {breadcrumbs.map((crumb, i) => (
+                <span key={crumb.path}>
+                  {i > 0 && <span className="sf-breadcrumb-sep">/</span>}
+                  {i === breadcrumbs.length - 1 ? (
+                    <span className="sf-breadcrumb-current">{crumb.label}</span>
+                  ) : (
+                    <button className="sf-breadcrumb-btn" onClick={() => setCurrentPath(crumb.path)}>
+                      {crumb.label}
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="sf-header-actions">
+          <span className="sf-file-count">{visibleFiles.length}개 파일</span>
           <button
-            className="category-add-btn"
+            className="sf-action-btn"
             onClick={() => setNewFolderName('')}
             title="새 폴더"
-          ><FolderPlus size={16} /></button>
+          ><FolderPlus size={16} /> 새 폴더</button>
           <button
-            className="category-add-btn"
+            className="sf-action-btn primary"
             onClick={() => addRef.current?.click()}
             title="파일 업로드"
             disabled={uploading.length > 0}
-          >{uploading.length > 0 ? '...' : <Upload size={16} />}</button>
+          >{uploading.length > 0 ? '...' : <><Upload size={16} /> 업로드</>}</button>
           <input
             ref={addRef}
             type="file"
@@ -290,25 +296,28 @@ export default function SharedFilesTab({ onBanner }: Props) {
             onChange={(e) => { if (e.target.files?.length) handleUpload(e.target.files); e.target.value = '' }}
           />
         </div>
+      </div>
 
-        {newFolderName !== null && (
-          <div className="sf-new-folder">
-            <Folder size={20} />
-            <input
-              className="sf-new-folder-input"
-              autoFocus
-              placeholder="폴더 이름"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreateFolder()
-                if (e.key === 'Escape') setNewFolderName(null)
-              }}
-            />
-            <button className="sf-new-folder-ok" onClick={handleCreateFolder}>생성</button>
-            <button className="sf-new-folder-cancel" onClick={() => setNewFolderName(null)}>취소</button>
-          </div>
-        )}
+      {newFolderName !== null && (
+        <div className="sf-new-folder" style={{ marginBottom: 16 }}>
+          <Folder size={20} />
+          <input
+            className="sf-new-folder-input"
+            autoFocus
+            placeholder="폴더 이름"
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCreateFolder()
+              if (e.key === 'Escape') setNewFolderName(null)
+            }}
+          />
+          <button className="sf-new-folder-ok" onClick={handleCreateFolder}>생성</button>
+          <button className="sf-new-folder-cancel" onClick={() => setNewFolderName(null)}>취소</button>
+        </div>
+      )}
+
+      <div className="card">
 
         {!loaded && (
           <div className="asset-grid">

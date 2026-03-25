@@ -1401,12 +1401,62 @@ body {
   }
 }
 
+/* ── Shared Files: Page Header ── */
+.sf-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.sf-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.sf-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.sf-file-count {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.sf-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sf-action-btn:hover {
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
+}
+.sf-action-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.sf-action-btn.primary:hover {
+  opacity: 0.9;
+}
+
 /* ── Shared Files: Breadcrumbs & Folder ── */
 .sf-breadcrumbs {
   display: flex;
   align-items: center;
   gap: 2px;
-  flex: 1;
   min-width: 0;
   font-size: 14px;
 }
