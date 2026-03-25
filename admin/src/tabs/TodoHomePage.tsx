@@ -148,8 +148,8 @@ const CHECK_SQUARE_D = 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2
 // LocalStorage persistence
 // ---------------------------------------------------------------------------
 
-const R2_KEY = 'admin/game01-todo-done.json'
-const LOCAL_KEY = 'game01-todo-done'
+const R2_KEY = 'admin/todo-done.json'
+const LOCAL_KEY = 'todo-done'
 
 function useTodoDone() {
   const [doneSet, setDoneSet] = useState<Set<string>>(() => {
