@@ -14,6 +14,7 @@ export class BootScene extends Phaser.Scene {
       ['tile-corner-tr', 'map/corner-tr.png'],
       ['tile-corner-bl', 'map/corner-bl.png'],
       ['tile-corner-br', 'map/corner-br.png'],
+      ['tile-road-start', 'map/road-start.png'],
       ['bg-game', 'background/game-bg.jpg'],
       ['rabbit-front', 'character/rabbit-front.png'],
       ['rabbit-back', 'character/rabbit-back.png'],

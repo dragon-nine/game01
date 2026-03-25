@@ -51,8 +51,10 @@ export class Road {
   generateInitialStand(height: number, startLane: number, startY?: number) {
     this.startY = startY ?? height - 200;
 
-    // row 0: 토끼 위치, 타일 없음
-    this.rows.push({ type: startLane as RoadType, y: this.startY, isTurn: false, tiles: [] });
+    // row 0: 토끼 시작 위치 (시작 타일)
+    const startTile = this.createTile(this.laneWorldX[startLane], this.startY, 'tile-road-start');
+    this.container.add(startTile);
+    this.rows.push({ type: startLane as RoadType, y: this.startY, isTurn: false, tiles: [startTile] });
 
     // row 1: 직선 (토끼 바로 위)
     const row1Y = this.startY - this.tileH;
