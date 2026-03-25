@@ -13,12 +13,13 @@ import { colors, radius, font, spacing, typeScale, typeUsage } from '../componen
 import { DEFAULT_SPEC, R2_KEY, type DesignSpec, type TypeScaleKey } from '../components/common/design-spec'
 import { getJson, putJson } from '../api'
 
-type Tab = 'typography' | 'color' | 'space' | 'components' | 'compositions'
+type Tab = 'typography' | 'color' | 'space' | 'buttons' | 'components' | 'compositions'
 
 const TABS: { id: Tab; label: string; desc: string }[] = [
   { id: 'typography', label: 'Typography', desc: '서체 & 타입 스케일' },
   { id: 'color', label: 'Color', desc: '컬러 팔레트' },
   { id: 'space', label: 'Space & Shape', desc: '간격 & 형태' },
+  { id: 'buttons', label: 'Buttons', desc: '버튼 스타일 유형' },
   { id: 'components', label: 'Components', desc: '버튼 & UI 요소' },
   { id: 'compositions', label: 'Compositions', desc: '복합 패턴' },
 ]
@@ -99,6 +100,7 @@ export default function CommonComponentsTab() {
       {tab === 'typography' && <TypographySection />}
       {tab === 'color' && <ColorSection />}
       {tab === 'space' && <SpaceShapeSection />}
+      {tab === 'buttons' && <ButtonStylesSection />}
       {tab === 'components' && <ComponentsSection spec={spec} update={update} />}
       {tab === 'compositions' && <CompositionsSection spec={spec} update={update} />}
     </div>
@@ -493,7 +495,169 @@ function SpaceShapeSection() {
 }
 
 /* ═══════════════════════════════════════════
-   4. COMPONENTS — 인터랙티브 컴포넌트
+   4. BUTTONS — 버튼 스타일 유형
+   ═══════════════════════════════════════════ */
+
+type ButtonStyle = 'flat' | 'outline' | 'innerLine'
+
+function GameButton({ variant = 'flat', children, icon, scale = 'lg', bgColor, borderColor, innerLineColor, borderRadius = 12 }: {
+  variant?: ButtonStyle
+  children: React.ReactNode
+  icon?: string
+  scale?: TypeScaleKey
+  bgColor?: string
+  borderColor?: string
+  innerLineColor?: string
+  borderRadius?: number
+}) {
+  const s = typeScale[scale]
+  const bg = bgColor || colors.gameOverBtnLg
+  const border = borderColor || '#000'
+  const innerLine = innerLineColor || colors.gameOverBtnLine
+
+  return (
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      padding: variant === 'innerLine' ? '4px' : undefined,
+      background: bg,
+      borderRadius,
+      border: variant !== 'flat' ? `3px solid ${border}` : 'none',
+      cursor: 'pointer',
+      position: 'relative',
+    }}>
+      {variant === 'innerLine' ? (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          padding: `${Math.round(s.fontSize * 0.5)}px ${Math.round(s.fontSize * 0.9)}px`,
+          borderRadius: borderRadius - 4,
+          border: `2px solid ${innerLine}`,
+          width: '100%',
+        }}>
+          {icon && <span style={{ fontSize: s.fontSize }}>{icon}</span>}
+          <span style={{
+            fontFamily: font.primary,
+            fontSize: s.fontSize,
+            fontWeight: s.fontWeight,
+            color: '#fff',
+            WebkitTextStroke: s.stroke ? `${s.stroke}px #000` : undefined,
+            paintOrder: 'stroke fill',
+          }}>{children}</span>
+        </div>
+      ) : (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          padding: `${Math.round(s.fontSize * 0.5)}px ${Math.round(s.fontSize * 0.9)}px`,
+        }}>
+          {icon && <span style={{ fontSize: s.fontSize }}>{icon}</span>}
+          <span style={{
+            fontFamily: font.primary,
+            fontSize: s.fontSize,
+            fontWeight: s.fontWeight,
+            color: '#fff',
+            WebkitTextStroke: s.stroke ? `${s.stroke}px #000` : undefined,
+            paintOrder: 'stroke fill',
+          }}>{children}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ButtonStylesSection() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+      <section>
+        <SectionHeader
+          title="Button Styles"
+          desc="게임에서 사용하는 3가지 버튼 유형. 모든 버튼 컴포넌트는 이 유형 중 하나를 기반으로 구성."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          {/* Flat */}
+          <div style={{ border: '1px solid #e8e8e8', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: '#333', padding: '40px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GameButton variant="flat" scale="lg">퇴근하기</GameButton>
+            </div>
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4 }}>Flat</div>
+              <p style={{ fontSize: 12, color: '#888', margin: 0 }}>단색 배경, 테두리 없음. 가장 기본적인 버튼 형태.</p>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                <Tag>배경색만</Tag>
+                <Tag>테두리 없음</Tag>
+              </div>
+            </div>
+          </div>
+
+          {/* Outline */}
+          <div style={{ border: '1px solid #e8e8e8', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: '#333', padding: '40px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GameButton variant="outline" scale="lg">홈으로 가기</GameButton>
+            </div>
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4 }}>Outline</div>
+              <p style={{ fontSize: 12, color: '#888', margin: 0 }}>배경 + 외곽 테두리. 기본 액션 버튼에 사용.</p>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                <Tag>배경색</Tag>
+                <Tag>외곽 border</Tag>
+              </div>
+            </div>
+          </div>
+
+          {/* Inner Line */}
+          <div style={{ border: '1px solid #e8e8e8', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: '#333', padding: '40px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GameButton variant="innerLine" scale="md" icon="🔥" bgColor={colors.gameOverBtnSm} innerLineColor={colors.gameOverBtnLine}>도전장 보내기</GameButton>
+            </div>
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4 }}>Inner Line</div>
+              <p style={{ fontSize: 12, color: '#888', margin: 0 }}>외곽 테두리 + 안쪽 이너 라인. 강조 액션 버튼에 사용.</p>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                <Tag>배경색</Tag>
+                <Tag>외곽 border</Tag>
+                <Tag>이너 라인</Tag>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Anatomy */}
+      <section>
+        <SectionHeader title="Anatomy" desc="Inner Line 버튼의 구조 분해." />
+        <div style={{ background: '#333', borderRadius: 12, padding: 40, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <GameButton variant="innerLine" scale="lg" icon="🔥" bgColor={colors.gameOverBtnSm} innerLineColor={colors.gameOverBtnLine}>도전장 보내기</GameButton>
+            {/* Labels */}
+            <div style={{ position: 'absolute', top: -24, left: '50%', transform: 'translateX(-50%)', fontSize: 11, color: '#fff', background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>outer border (3px)</div>
+            <div style={{ position: 'absolute', bottom: -24, left: '50%', transform: 'translateX(-50%)', fontSize: 11, color: colors.gameOverBtnLine, background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>inner line (2px)</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Variants */}
+      <section>
+        <SectionHeader title="Scale Variants" desc="같은 유형에 다른 Type Scale 적용." />
+        <div style={{ background: '#333', borderRadius: 12, padding: 32, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+          <GameButton variant="innerLine" scale="lg" icon="🔥" bgColor={colors.gameOverBtnSm} innerLineColor={colors.gameOverBtnLine}>lg — 도전장</GameButton>
+          <GameButton variant="innerLine" scale="md" icon="🏆" bgColor={colors.gameOverBtnSm} innerLineColor={colors.gameOverBtnLine}>md — 랭킹</GameButton>
+          <GameButton variant="innerLine" scale="sm" bgColor={colors.gameOverBtnSm} innerLineColor={colors.gameOverBtnLine}>sm — 더보기</GameButton>
+          <GameButton variant="innerLine" scale="xs" bgColor={colors.gameOverBtnSm} innerLineColor={colors.gameOverBtnLine}>xs — 라벨</GameButton>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   5. COMPONENTS — 인터랙티브 컴포넌트
    ═══════════════════════════════════════════ */
 
 type UpdateFn = <K extends keyof DesignSpec>(key: K, partial: Partial<DesignSpec[K]>) => void
