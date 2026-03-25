@@ -8,7 +8,6 @@ import LaunchPrepTab from './tabs/LaunchPrepTab'
 import GameDashboard from './tabs/GameDashboard'
 import TodoHomePage from './tabs/TodoHomePage'
 import MemoTab from './tabs/MemoTab'
-import ChecklistTab from './tabs/ChecklistTab'
 import ContentTab from './tabs/ContentTab'
 import Banner from './components/Banner'
 
@@ -53,7 +52,7 @@ export default function App() {
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <TabNav activePage={page} onPageChange={handlePageChange} open={sidebarOpen} />
       <main className="admin-content">
-        {page === 'dashboard' && <TodoHomePage />}
+        {page === 'dashboard' && <GameDashboard />}
         {page === 'game01-assets' && <GameAssetsTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'game02-assets' && <PlaceholderTab title="game02 에셋 관리" message="game02 프로젝트가 생성되면 활성화됩니다." />}
         {page === 'game01-layout' && <LayoutEditorTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
@@ -61,7 +60,7 @@ export default function App() {
         {page === 'game01-content' && <ContentTab gameId="game01" gameName="직장인 잔혹사 : 퇴근길" onBanner={showBanner} />}
         {page === 'shared-files' && <SharedFilesTab onBanner={showBanner} />}
         {page === 'memo' && <MemoTab onBanner={showBanner} />}
-        {page === 'checklist' && <ChecklistTab onBanner={showBanner} />}
+        {page === 'checklist' && <TodoHomePage />}
       </main>
       {banner && (
         <Banner type={banner.type} message={banner.message} onDismiss={() => setBanner(null)} />
