@@ -70,7 +70,7 @@ export class CommuteScene extends Phaser.Scene {
     this.laneW = (width - PADDING * 2) / VISIBLE_LANES;
     this.tileH = this.laneW;
 
-    // 5레인의 월드 X 좌표
+    // 각 레인의 월드 X 좌표
     this.laneWorldX = [];
     for (let i = 0; i < NUM_LANES; i++) {
       this.laneWorldX.push(PADDING + this.laneW / 2 + i * this.laneW);

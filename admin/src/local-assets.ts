@@ -6,7 +6,6 @@ export interface LocalAsset {
 
 export const LOCAL_ASSETS: LocalAsset[] = [
   // character
-  { path: 'character/rabbit.png', category: 'character', filename: 'rabbit.png' },
   { path: 'character/rabbit-front.png', category: 'character', filename: 'rabbit-front.png' },
   { path: 'character/rabbit-back.png', category: 'character', filename: 'rabbit-back.png' },
   { path: 'character/rabbit-side.png', category: 'character', filename: 'rabbit-side.png' },
@@ -23,7 +22,6 @@ export const LOCAL_ASSETS: LocalAsset[] = [
   { path: 'ui/gauge-full.png', category: 'ui', filename: 'gauge-full.png' },
   { path: 'ui/gauge-empty.png', category: 'ui', filename: 'gauge-empty.png' },
   // audio
-  { path: 'audio/bgm/gameplay.mp3', category: 'audio', filename: 'gameplay.mp3' },
   { path: 'audio/bgm/menu.mp3', category: 'audio', filename: 'menu.mp3' },
   { path: 'audio/sfx/click.ogg', category: 'audio', filename: 'click.ogg' },
   { path: 'audio/sfx/combo.ogg', category: 'audio', filename: 'combo.ogg' },
@@ -31,7 +29,6 @@ export const LOCAL_ASSETS: LocalAsset[] = [
   { path: 'audio/sfx/forward.ogg', category: 'audio', filename: 'forward.ogg' },
   { path: 'audio/sfx/game-over.ogg', category: 'audio', filename: 'game-over.ogg' },
   { path: 'audio/sfx/switch.ogg', category: 'audio', filename: 'switch.ogg' },
-  { path: 'audio/sfx/time-bonus.ogg', category: 'audio', filename: 'time-bonus.ogg' },
   { path: 'audio/sfx/timer-warning.ogg', category: 'audio', filename: 'timer-warning.ogg' },
 ]
 
