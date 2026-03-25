@@ -420,8 +420,8 @@ function ColorSection() {
           <GradientCard
             label="Revive Button"
             desc="광고보고 부활 버튼"
-            from={colors.redLight}
-            to={colors.redDark}
+            from="#e5332f"
+            to="#771615"
             direction="135deg"
           />
           <GradientCard
