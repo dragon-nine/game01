@@ -56,96 +56,27 @@ export const font = {
   },
 } as const
 
-/** 텍스트 스타일 토큰 — 각 용도별 정의 */
-export const textStyles = {
-  /** 메인 타이틀 1줄 (직장인 잔혹사) */
-  titleLarge: {
-    fontSize: 56,
-    fontWeight: 900,
-    strokeWidth: 6,
-    outerStrokeWidth: 3,
-    color: 'gradient',
-    usage: '메인 화면 타이틀',
-  },
-  /** 메인 타이틀 2줄 (당신의 하루를...) */
-  titleSub: {
-    fontSize: 24,
-    fontWeight: 700,
-    strokeWidth: 4,
-    outerStrokeWidth: 2,
-    color: '#ffffff',
-    usage: '메인 화면 서브타이틀',
-  },
-  /** 점수 (게임오버/도전장) */
-  score: {
-    fontSize: 72,
-    fontWeight: 900,
-    strokeWidth: 6,
-    outerStrokeWidth: 0,
-    color: '#ffffff',
-    usage: '점수 표시 (게임오버, 도전장)',
-  },
-  /** 버튼 텍스트 (대형) */
-  buttonLarge: {
-    fontSize: 28,
-    fontWeight: 900,
-    strokeWidth: 3,
-    outerStrokeWidth: 0,
-    color: '#ffffff',
-    usage: '홈으로 가기, 광고보고 부활',
-  },
-  /** 버튼 텍스트 (중형) */
-  buttonMedium: {
-    fontSize: 22,
-    fontWeight: 900,
-    strokeWidth: 2.5,
-    outerStrokeWidth: 0,
-    color: '#ffffff',
-    usage: '도전장 보내기, 랭킹 보기',
-  },
-  /** 버튼 텍스트 (CTA) */
-  buttonCTA: {
-    fontSize: 16,
-    fontWeight: 700,
-    strokeWidth: 0,
-    outerStrokeWidth: 0,
-    color: '#ffffff',
-    usage: '카카오톡으로 도전장 보내기',
-  },
-  /** 본문 (멘트 카드) */
-  body: {
-    fontSize: 14,
-    fontWeight: 400,
-    strokeWidth: 0,
-    outerStrokeWidth: 0,
-    color: '#ffffff',
-    usage: '게임오버 멘트, 모달 본문',
-  },
-  /** 라벨 (보조 텍스트) */
-  label: {
-    fontSize: 13,
-    fontWeight: 700,
-    strokeWidth: 0,
-    outerStrokeWidth: 0,
-    color: '#969696',
-    usage: '다른 멘트로 바꾸기, 최고기록',
-  },
-  /** HUD 점수 */
-  hudScore: {
-    fontSize: 90,
-    fontWeight: 900,
-    strokeWidth: 6,
-    outerStrokeWidth: 0,
-    color: '#ffffff',
-    usage: '인게임 점수 표시',
-  },
-  /** 튜토리얼 가이드 */
-  guide: {
-    fontSize: 13,
-    fontWeight: 700,
-    strokeWidth: 0,
-    outerStrokeWidth: 0,
-    color: '#ffffff',
-    usage: '앞으로 한 칸 이동, 회전하고 이동',
-  },
+/**
+ * 타입 스케일 — 7단계 크기 시스템
+ * 모든 텍스트는 이 스케일 안에서 선택. 용도는 매핑으로 관리.
+ */
+export const typeScale = {
+  display: { fontSize: 90, fontWeight: 900, stroke: 6 },
+  heading1: { fontSize: 72, fontWeight: 900, stroke: 6 },
+  heading2: { fontSize: 56, fontWeight: 900, stroke: 6 },
+  heading3: { fontSize: 28, fontWeight: 900, stroke: 3 },
+  body: { fontSize: 22, fontWeight: 700, stroke: 2.5 },
+  caption: { fontSize: 16, fontWeight: 700, stroke: 0 },
+  small: { fontSize: 13, fontWeight: 700, stroke: 0 },
 } as const
+
+/** 용도별 스케일 매핑 */
+export const typeUsage: Record<string, { scale: keyof typeof typeScale; usages: string[] }> = {
+  display: { scale: 'display', usages: ['인게임 HUD 점수'] },
+  heading1: { scale: 'heading1', usages: ['게임오버 점수', '도전장 점수'] },
+  heading2: { scale: 'heading2', usages: ['메인 타이틀 (직장인 잔혹사)'] },
+  heading3: { scale: 'heading3', usages: ['홈으로 가기', '광고보고 부활', '퇴근하기'] },
+  body: { scale: 'body', usages: ['도전장 보내기', '랭킹 보기', '서브타이틀'] },
+  caption: { scale: 'caption', usages: ['카카오톡 CTA', '게임오버 멘트'] },
+  small: { scale: 'small', usages: ['가이드 텍스트', '라벨', '최고기록'] },
+}

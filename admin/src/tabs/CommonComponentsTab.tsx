@@ -9,7 +9,7 @@ import GaugeBar from '../components/common/GaugeBar'
 import MainTitle from '../components/common/MainTitle'
 import ButtonGuide from '../components/common/ButtonGuide'
 import ChallengeModal from '../components/common/ChallengeModal'
-import { colors, radius, font, spacing, textStyles } from '../components/common/design-tokens'
+import { colors, radius, font, spacing, typeScale, typeUsage } from '../components/common/design-tokens'
 import { DEFAULT_SPEC, R2_KEY, type DesignSpec } from '../components/common/design-spec'
 import { getJson, putJson } from '../api'
 
@@ -112,19 +112,7 @@ export default function CommonComponentsTab() {
 function TypographySection() {
   const [sampleText, setSampleText] = useState('직장인 잔혹사')
 
-  // Type scale 계층순으로 정렬
-  const typeScale = [
-    { key: 'hudScore', ...textStyles.hudScore },
-    { key: 'score', ...textStyles.score },
-    { key: 'titleLarge', ...textStyles.titleLarge },
-    { key: 'buttonLarge', ...textStyles.buttonLarge },
-    { key: 'titleSub', ...textStyles.titleSub },
-    { key: 'buttonMedium', ...textStyles.buttonMedium },
-    { key: 'buttonCTA', ...textStyles.buttonCTA },
-    { key: 'body', ...textStyles.body },
-    { key: 'label', ...textStyles.label },
-    { key: 'guide', ...textStyles.guide },
-  ]
+  const scaleEntries = Object.entries(typeScale) as [keyof typeof typeScale, typeof typeScale[keyof typeof typeScale]][]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
@@ -204,53 +192,53 @@ function TypographySection() {
           </label>
         </div>
         <div style={{ background: '#969696', borderRadius: 12, overflow: 'hidden' }}>
-          {typeScale.map((ts, i) => (
-            <div
-              key={ts.key}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '140px 1fr 200px',
-                alignItems: 'center',
-                padding: '16px 20px',
-                borderBottom: i < typeScale.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                gap: 16,
-              }}
-            >
-              {/* Name + size */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{ts.key}</div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                  <Tag>{ts.fontSize}px</Tag>
-                  <Tag>w{ts.fontWeight}</Tag>
-                  {ts.strokeWidth > 0 && <Tag>stroke {ts.strokeWidth}</Tag>}
+          {scaleEntries.map(([name, ts], i) => {
+            const usage = typeUsage[name]
+            return (
+              <div
+                key={name}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '120px 1fr 240px',
+                  alignItems: 'center',
+                  padding: '16px 20px',
+                  borderBottom: i < scaleEntries.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none',
+                  gap: 16,
+                }}
+              >
+                {/* Name + specs */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{name}</div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    <Tag>{ts.fontSize}px</Tag>
+                    <Tag>w{ts.fontWeight}</Tag>
+                    {ts.stroke > 0 && <Tag>stroke {ts.stroke}</Tag>}
+                  </div>
+                </div>
+
+                {/* Preview */}
+                <div style={{
+                  fontFamily: font.primary,
+                  fontSize: Math.min(ts.fontSize, 72),
+                  fontWeight: ts.fontWeight,
+                  color: '#fff',
+                  WebkitTextStroke: ts.stroke ? `${ts.stroke}px #000` : undefined,
+                  paintOrder: 'stroke fill',
+                  lineHeight: 1.2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {sampleText}
+                </div>
+
+                {/* Usages */}
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'right', lineHeight: 1.5 }}>
+                  {usage?.usages.join(' · ')}
                 </div>
               </div>
-
-              {/* Preview */}
-              <div style={{
-                fontFamily: font.primary,
-                fontSize: Math.min(ts.fontSize, 72),
-                fontWeight: ts.fontWeight,
-                color: ts.color === 'gradient' ? undefined : ts.color,
-                WebkitTextStroke: ts.strokeWidth ? `${ts.strokeWidth}px #000` : undefined,
-                paintOrder: 'stroke fill',
-                lineHeight: 1.2,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                ...(ts.color === 'gradient' ? {
-                  background: `linear-gradient(to bottom, ${colors.blue}, ${colors.blueLight})`,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                } : {}),
-              }}>
-                {sampleText}
-              </div>
-
-              {/* Usage */}
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textAlign: 'right' }}>{ts.usage}</div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
     </div>
