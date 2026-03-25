@@ -251,11 +251,11 @@ function FontFamilyCard({ name, family, specimen, desc, weights }: {
 }) {
   return (
     <div style={{ border: '1px solid #e8e8e8', borderRadius: 12, overflow: 'hidden' }}>
-      <div style={{ background: '#111', padding: '28px 24px', textAlign: 'center' }}>
-        <div style={{ fontFamily: family, fontWeight: 900, fontSize: 36, color: '#fff', lineHeight: 1.2 }}>
+      <div style={{ background: '#f0f0f0', padding: '28px 24px', textAlign: 'center' }}>
+        <div style={{ fontFamily: family, fontWeight: 900, fontSize: 36, color: '#333', lineHeight: 1.2 }}>
           {specimen}
         </div>
-        <div style={{ fontFamily: family, fontWeight: 400, fontSize: 14, color: '#888', marginTop: 4 }}>
+        <div style={{ fontFamily: family, fontWeight: 400, fontSize: 14, color: '#999', marginTop: 4 }}>
           가나다라 ABCD 1234 !@#$
         </div>
       </div>
