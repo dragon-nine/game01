@@ -102,16 +102,16 @@ export default function Inspector({
         )
       })()}
 
-      {/* Inner Padding (for card/modal) */}
+      {/* Inner Padding (for card/modal) — compact */}
       {(el.type === 'card' || el.type === 'modal') && el.innerPadding && (
-        <Section title="내부 패딩">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <Field label="상"><NumInput value={el.innerPadding.top} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, top: v } })} /></Field>
-            <Field label="하"><NumInput value={el.innerPadding.bottom} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, bottom: v } })} /></Field>
-            <Field label="좌"><NumInput value={el.innerPadding.left} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, left: v } })} /></Field>
-            <Field label="우"><NumInput value={el.innerPadding.right} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, right: v } })} /></Field>
+        <Field label="내부 패딩 (상/우/하/좌)">
+          <div style={{ display: 'flex', gap: 4 }}>
+            <NumInput value={el.innerPadding.top} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, top: v } })} />
+            <NumInput value={el.innerPadding.right} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, right: v } })} />
+            <NumInput value={el.innerPadding.bottom} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, bottom: v } })} />
+            <NumInput value={el.innerPadding.left} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, left: v } })} />
           </div>
-        </Section>
+        </Field>
       )}
 
       {/* Size */}
@@ -129,7 +129,9 @@ export default function Inspector({
           {(el.widthMode !== 'fixed') && <span style={{ fontSize: 11, color: '#999' }}>패딩 기준 풀 너비</span>}
         </div>
       </Field>
-      {el.heightPx !== undefined && <Field label="높이 (px)"><NumInput value={el.heightPx} onChange={(v) => update({ heightPx: v })} /></Field>}
+      {el.heightPx !== undefined && el.type !== 'card' && el.type !== 'modal' && (
+        <Field label="높이 (px)"><NumInput value={el.heightPx} onChange={(v) => update({ heightPx: v })} /></Field>
+      )}
 
       {/* Label */}
       {(el.type === 'text' || el.type === 'button') && (

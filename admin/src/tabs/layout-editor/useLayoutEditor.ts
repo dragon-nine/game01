@@ -153,11 +153,9 @@ export function useLayoutEditor(gameId: string) {
       el.label = '버튼'
       el.buttonStyle = { styleType: 'outline', bgColor: '#24282c', scaleKey: 'lg' }
     } else if (type === 'card') {
-      el.heightPx = 300
       el.label = '카드'
       el.innerPadding = { top: 20, right: 16, bottom: 20, left: 16 }
     } else if (type === 'modal') {
-      el.heightPx = 480
       el.label = '모달'
       el.innerPadding = { top: 48, right: 20, bottom: 24, left: 20 }
     } else if (type === 'toggle') {

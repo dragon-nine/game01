@@ -74,7 +74,20 @@ export function computePreviewLayout(
     let maxH = 0
     for (const el of rowEls) {
       const elW = resolveElWidth(el, n)
-      if (el.type === 'image' && imageSizes[el.id]) {
+      if ((el.type === 'card' || el.type === 'modal') && !el.heightPx) {
+        // 자식 기반 높이 자동 계산
+        const children = allElements.filter((e) => e.parentId === el.id && e.visible !== false)
+        const ip = el.innerPadding || { top: 16, right: 16, bottom: 16, left: 16 }
+        const innerW = elW - (ip.left + ip.right) * scale
+        if (children.length > 0) {
+          const cleanChildren = children.map((c) => ({ ...c, parentId: undefined }))
+          const childPos = computePreviewLayout(cleanChildren, innerW, 9999, imageSizes, 'top', { top: 0, right: 0, bottom: 0, left: 0 }, allElements)
+          const childBottom = childPos.length > 0 ? Math.max(...childPos.map((p) => p.y + p.h * (1 - p.originY))) : 0
+          maxH = Math.max(maxH, childBottom + (ip.top + ip.bottom) * scale)
+        } else {
+          maxH = Math.max(maxH, (ip.top + ip.bottom + 40) * scale) // 빈 카드 최소 높이
+        }
+      } else if (el.type === 'image' && imageSizes[el.id]) {
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
       } else if (el.heightPx) {
         maxH = Math.max(maxH, el.heightPx * scale)
