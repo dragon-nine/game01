@@ -160,6 +160,7 @@ export function computePreviewLayout(
   let curY = groupVAlign === 'top'
     ? padTop
     : Math.max(padTop, padTop + (contentAreaH - totalH) / 2)
+  if (rows.length > 0) console.log('[center]', { groupVAlign, padTop, padBottom, contentAreaH, totalH, curY, rowHeights: rows.map(r => r.height) })
 
   for (let ri = 0; ri < rows.length; ri++) {
     const row = rows[ri]
