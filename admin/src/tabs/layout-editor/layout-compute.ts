@@ -201,7 +201,7 @@ export function computePreviewLayout(
 
       const childrenClean = children.map((c) => ({ ...c, parentId: undefined }))
       const childPositions = computePreviewLayout(
-        childrenClean, innerScreenW, innerScreenH, imageSizes, 'center',
+        childrenClean, innerScreenW, innerScreenH, imageSizes, 'top',
         { top: 0, right: 0, bottom: 0, left: 0 }, allElements, innerDesignW,
       )
 
