@@ -93,7 +93,7 @@ export function computePreviewLayout(
   const totalH = rows.reduce((sum, r, i) => sum + r.height + (i > 0 ? r.gapPx * scale : 0), 0)
   let curY = groupVAlign === 'top'
     ? padTop + firstGap
-    : padTop + (contentAreaH - totalH) / 2 + firstGap
+    : Math.max(padTop, padTop + (contentAreaH - totalH) / 2) + firstGap
 
   for (let ri = 0; ri < rows.length; ri++) {
     const row = rows[ri]
