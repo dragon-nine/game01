@@ -139,7 +139,12 @@ export default function Inspector({
         const scaleKey = ts.scaleKey || 'sm'
         const scaleVal = typeScale[scaleKey]
         const hasStroke = (ts.strokeWidth ?? scaleVal.stroke) > 0
-        const hasGradient = !!ts.gradientColors
+
+        // 현재 선택된 색상값 (단색 or 그라데이션 키)
+        const currentColorValue = ts.gradientColors
+          ? GRADIENT_KEYS.find((k) => gradients[k].from === ts.gradientColors![0] && gradients[k].to === ts.gradientColors![1]) || GRADIENT_KEYS[0]
+          : COLOR_ENTRIES.find(([, hex]) => hex === ts.color)?.[0] || '__white'
+
         return (
           <Section title="텍스트 스타일">
             <Field label="Type Scale">
@@ -155,38 +160,26 @@ export default function Inspector({
                 {SCALE_KEYS.map((k) => <option key={k} value={k}>{k} — {typeScale[k].fontSize}px</option>)}
               </select>
             </Field>
-            {/* Color: 단색 or 그라데이션 */}
+            {/* Color: 단색 + 그라데이션 통합 */}
             <Field label="색상">
-              <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                <MiniToggle active={!hasGradient} label="단색" onClick={() => update({ textStyle: { ...ts, color: ts.color || '#ffffff', gradientColors: undefined } })} />
-                <MiniToggle active={hasGradient} label="그라데이션" onClick={() => {
-                  const g = gradients[GRADIENT_KEYS[0]]
-                  update({ textStyle: { ...ts, gradientColors: [g.from, g.to] } })
-                }} />
-              </div>
-              {hasGradient ? (
-                <select
-                  value={GRADIENT_KEYS.find((k) => {
-                    const g = gradients[k]
-                    return ts.gradientColors?.[0] === g.from && ts.gradientColors?.[1] === g.to
-                  }) || GRADIENT_KEYS[0]}
-                  onChange={(e) => {
-                    const g = gradients[e.target.value as GradientKey]
-                    update({ textStyle: { ...ts, gradientColors: [g.from, g.to] } })
-                  }}
-                  style={selectStyle}
-                >
-                  {GRADIENT_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
-                </select>
-              ) : (
-                <ColorSelect value={ts.color || '#ffffff'} onChange={(v) => update({ textStyle: { ...ts, color: v } })} />
-              )}
+              <UnifiedColorSelect
+                value={currentColorValue}
+                onChange={(val, type) => {
+                  if (type === 'gradient') {
+                    const g = gradients[val as GradientKey]
+                    update({ textStyle: { ...ts, gradientColors: [g.from, g.to], color: undefined } })
+                  } else {
+                    const hex = colors[val as keyof typeof colors] || val
+                    update({ textStyle: { ...ts, color: hex, gradientColors: undefined } })
+                  }
+                }}
+              />
             </Field>
-            {/* Stroke toggle */}
-            <Field label="외곽선 (Stroke)">
+            {/* Stroke: 있음/없음 */}
+            <Field label="외곽선">
               <div style={{ display: 'flex', gap: 6 }}>
                 <MiniToggle active={!hasStroke} label="없음" onClick={() => update({ textStyle: { ...ts, strokeWidth: 0 } })} />
-                <MiniToggle active={hasStroke} label={`적용 (${scaleVal.stroke}px)`} onClick={() => update({ textStyle: { ...ts, strokeWidth: scaleVal.stroke } })} />
+                <MiniToggle active={hasStroke} label="적용" onClick={() => update({ textStyle: { ...ts, strokeWidth: scaleVal.stroke } })} />
               </div>
             </Field>
           </Section>
@@ -307,6 +300,52 @@ function ActionBtn({ label, onClick, danger }: { label: string; onClick: () => v
       {label}
     </button>
   )
+}
+
+function UnifiedColorSelect({ value, onChange }: {
+  value: string
+  onChange: (val: string, type: 'solid' | 'gradient') => void
+}) {
+  const isGradient = GRADIENT_KEYS.includes(value as GradientKey)
+  const matchedGradient = isGradient ? gradients[value as GradientKey] : null
+  const matchedColor = !isGradient ? COLOR_ENTRIES.find(([name]) => name === value) : null
+  const previewBg = matchedGradient
+    ? `linear-gradient(${matchedGradient.direction}, ${matchedGradient.from}, ${matchedGradient.to})`
+    : matchedColor ? matchedColor[1] : '#ffffff'
+
+  return (
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ width: 24, height: 24, borderRadius: 6, background: previewBg, border: '1px solid #ddd', flexShrink: 0 }} />
+      <select
+        value={value}
+        onChange={(e) => {
+          const v = e.target.value
+          if (GRADIENT_KEYS.includes(v as GradientKey)) {
+            onChange(v, 'gradient')
+          } else {
+            onChange(v, 'solid')
+          }
+        }}
+        style={{ ...selectStyleInline, flex: 1 }}
+      >
+        <optgroup label="단색">
+          {COLOR_ENTRIES.map(([name, hex]) => (
+            <option key={name} value={name}>{name} — {hex}</option>
+          ))}
+        </optgroup>
+        <optgroup label="그라데이션">
+          {GRADIENT_KEYS.map((k) => (
+            <option key={k} value={k}>{k}</option>
+          ))}
+        </optgroup>
+      </select>
+    </div>
+  )
+}
+
+const selectStyleInline: React.CSSProperties = {
+  padding: '5px 8px', borderRadius: 6, border: '1px solid #ddd',
+  background: '#fff', color: '#333', fontSize: 13,
 }
 
 function MiniToggle({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
