@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install && node scripts/sync-game-assets.mjs && cd admin && npm install && npm run build && cd ../games/game01 && npm install && VITE_PLATFORM=toss npm run build",
+  "buildCommand": "npm install && cd admin && npm install && npm run build && cd ../games/game01 && npm install && VITE_PLATFORM=toss npm run build",
   "outputDirectory": "dist",
   "headers": [
     {
