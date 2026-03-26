@@ -118,22 +118,34 @@ export function computePreviewLayout(
     'circle-btn': { w: 80, h: 80 },
   }
 
-  /** full 모드 요소의 너비 계산 — 같은 행에 여러 개면 균등 분할 */
-  function resolveElWidth(el: GroupElement, rowCount: number): number {
+  /** 요소 너비 계산 — fixed는 고정, full은 남은 공간 분할 */
+  function resolveElWidth(el: GroupElement, rowEls: GroupElement[]): number {
+    // 컴포넌트 고정 크기
     if (COMPONENT_SIZES[el.type]) return COMPONENT_SIZES[el.type].w * scale
     if (el.widthMode === 'fixed') return el.widthPx * scale
-    if (rowCount <= 1) return contentW * scale
+    if (rowEls.length <= 1) return contentW * scale
+
+    // fixed 요소들의 너비 합산
     const hGap = (el.hGapPx ?? 8)
-    return (contentW - hGap * (rowCount - 1)) / rowCount * scale
+    const totalGap = hGap * (rowEls.length - 1)
+    let fixedTotal = 0
+    let fullCount = 0
+    for (const r of rowEls) {
+      if (COMPONENT_SIZES[r.type]) fixedTotal += COMPONENT_SIZES[r.type].w
+      else if (r.widthMode === 'fixed') fixedTotal += r.widthPx
+      else fullCount++
+    }
+    // 남은 공간을 full 요소끼리 균등 분할
+    const remaining = contentW - totalGap - fixedTotal
+    return (fullCount > 0 ? remaining / fullCount : remaining) * scale
   }
 
   for (const order of rowOrders) {
     const rowEls = rowMap.get(order)!
     const gapPx = rowEls[0].gapPx
-    const n = rowEls.length
     let maxH = 0
     for (const el of rowEls) {
-      const elW = resolveElWidth(el, n)
+      const elW = resolveElWidth(el, rowEls)
       if (COMPONENT_SIZES[el.type]) {
         maxH = Math.max(maxH, COMPONENT_SIZES[el.type].h * scale)
       } else if (el.type === 'card' || el.type === 'modal') {
@@ -176,16 +188,16 @@ export function computePreviewLayout(
       return row.height
     }
 
-    if (n === 1) {
+    if (row.elements.length === 1) {
       const el = row.elements[0]
-      const elW = resolveElWidth(el, 1)
-      const cx = el.widthMode === 'fixed' ? screenW / 2 : contentLeft + contentW * scale / 2
+      const elW = resolveElWidth(el, row.elements)
+      const cx = (COMPONENT_SIZES[el.type] || el.widthMode === 'fixed') ? screenW / 2 : contentLeft + contentW * scale / 2
       results.push({ id: el.id, x: cx, y: cy, w: elW, h: calcElH(el, elW), originX: 0.5, originY: 0.5 })
     } else {
       const hGap = (row.elements[0].hGapPx ?? 8) * scale
       let cx = contentLeft
       for (const el of row.elements) {
-        const elW = resolveElWidth(el, n)
+        const elW = resolveElWidth(el, row.elements)
         results.push({ id: el.id, x: cx + elW / 2, y: cy, w: elW, h: calcElH(el, elW), originX: 0.5, originY: 0.5 })
         cx += elW + hGap
       }
