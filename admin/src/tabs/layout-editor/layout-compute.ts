@@ -178,8 +178,6 @@ export function computePreviewLayout(
     const row = rows[ri]
     if (ri > 0) curY += row.gapPx * scale
     const cy = curY + row.height / 2
-    const n = row.elements.length
-
     const calcElH = (el: LayoutElement, elW: number) => {
       if (el.type === 'card' || el.type === 'modal') return calcContainerHeight(el, allElements, imageSizes, scale)
       if (el.type === 'image' && imageSizes[el.id]) return imageSizes[el.id].h * (elW / imageSizes[el.id].w)
