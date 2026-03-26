@@ -27,6 +27,8 @@ interface LayoutElementBase {
   widthMode?: 'full' | 'fixed'
   widthPx: number
   heightPx?: number
+  parentId?: string
+  innerPadding?: { top: number; right: number; bottom: number; left: number }
   label?: string
   textStyle?: TextStyle
   buttonStyle?: ButtonStyle

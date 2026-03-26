@@ -15,6 +15,7 @@ interface Props {
   onUpdate: (id: string, patch: Partial<LayoutElement>) => void
   onRemove: (id: string) => void
   onDuplicate: (id: string) => void
+  onSetParent: (childId: string, parentId: string | undefined) => void
   padding: { top: number; right: number; bottom: number; left: number }
   onPaddingUpdate: (patch: Partial<{ top: number; right: number; bottom: number; left: number }>) => void
   bgType: BgType
@@ -24,7 +25,7 @@ interface Props {
 }
 
 export default function Inspector({
-  elements, element, onUpdate, onRemove, onDuplicate,
+  elements, element, onUpdate, onRemove, onDuplicate, onSetParent,
   padding, onPaddingUpdate,
   bgType, bgColor, bgGradient, onBgUpdate,
 }: Props) {
@@ -83,6 +84,36 @@ export default function Inspector({
         <Tag>{el.positioning}</Tag>
         {el.locked && <Tag>잠금</Tag>}
       </div>
+
+      {/* Parent */}
+      {el.type !== 'card' && el.type !== 'modal' && (() => {
+        const containers = elements.filter((e) => (e.type === 'card' || e.type === 'modal') && e.id !== el.id)
+        if (containers.length === 0) return null
+        return (
+          <Field label="부모 요소">
+            <select
+              value={el.parentId || ''}
+              onChange={(e) => onSetParent(el.id, e.target.value || undefined)}
+              style={selectStyle}
+            >
+              <option value="">없음 (루트)</option>
+              {containers.map((c) => <option key={c.id} value={c.id}>{c.label || c.id} ({c.type})</option>)}
+            </select>
+          </Field>
+        )
+      })()}
+
+      {/* Inner Padding (for card/modal) */}
+      {(el.type === 'card' || el.type === 'modal') && el.innerPadding && (
+        <Section title="내부 패딩">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <Field label="상"><NumInput value={el.innerPadding.top} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, top: v } })} /></Field>
+            <Field label="하"><NumInput value={el.innerPadding.bottom} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, bottom: v } })} /></Field>
+            <Field label="좌"><NumInput value={el.innerPadding.left} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, left: v } })} /></Field>
+            <Field label="우"><NumInput value={el.innerPadding.right} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, right: v } })} /></Field>
+          </div>
+        </Section>
+      )}
 
       {/* Size */}
       <Field label="너비">

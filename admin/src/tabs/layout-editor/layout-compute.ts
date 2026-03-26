@@ -42,9 +42,9 @@ export function computePreviewLayout(
   const contentW = DESIGN_W - padding.left - padding.right
   const contentLeft = padding.left * scale
 
-  // Group elements
+  // Group elements (루트만, 자식 제외)
   const groupEls = elements.filter(
-    (e): e is GroupElement => e.positioning === 'group' && e.visible !== false,
+    (e): e is GroupElement => e.positioning === 'group' && e.visible !== false && !e.parentId,
   )
   const rowMap = new Map<number, GroupElement[]>()
   for (const el of groupEls) {
@@ -127,7 +127,7 @@ export function computePreviewLayout(
 
   // Anchor elements
   const anchorEls = elements.filter(
-    (e): e is AnchorElement => e.positioning === 'anchor' && e.visible !== false,
+    (e): e is AnchorElement => e.positioning === 'anchor' && e.visible !== false && !e.parentId,
   )
   for (const el of anchorEls) {
     const elW = el.widthPx * scale
@@ -154,6 +154,46 @@ export function computePreviewLayout(
       case 'bottom-right': x = screenW - ox; y = screenH - oy; originX = 1; originY = 1; break
     }
     results.push({ id: el.id, x, y, w: elW, h: elH, originX, originY })
+  }
+
+  // ── Pass 2: 자식 요소 (parentId가 있는 요소) ──
+  const childEls = elements.filter((e) => e.parentId && e.visible !== false)
+  if (childEls.length > 0) {
+    // 부모별로 그룹
+    const childByParent = new Map<string, LayoutElement[]>()
+    for (const el of childEls) {
+      const list = childByParent.get(el.parentId!) || []
+      list.push(el)
+      childByParent.set(el.parentId!, list)
+    }
+
+    for (const [parentId, children] of childByParent) {
+      const parentPos = results.find((p) => p.id === parentId)
+      const parentEl = elements.find((e) => e.id === parentId)
+      if (!parentPos || !parentEl) continue
+
+      const ip = parentEl.innerPadding || { top: 16, right: 16, bottom: 16, left: 16 }
+      const parentLeft = parentPos.x - parentPos.w * parentPos.originX
+      const parentTop = parentPos.y - parentPos.h * parentPos.originY
+
+      // 자식을 부모 영역 안에서 레이아웃
+      const innerW = parentPos.w - (ip.left + ip.right) * scale
+      const innerH = parentPos.h - (ip.top + ip.bottom) * scale
+      const innerPadding = { top: 0, right: 0, bottom: 0, left: 0 }
+
+      const childPositions = computePreviewLayout(
+        children, innerW, innerH, imageSizes, 'top', innerPadding,
+      )
+
+      // 부모 위치 기준으로 오프셋
+      for (const cp of childPositions) {
+        results.push({
+          ...cp,
+          x: cp.x + parentLeft + ip.left * scale,
+          y: cp.y + parentTop + ip.top * scale,
+        })
+      }
+    }
   }
 
   return results

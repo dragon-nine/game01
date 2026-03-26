@@ -155,9 +155,11 @@ export function useLayoutEditor(gameId: string) {
     } else if (type === 'card') {
       el.heightPx = 300
       el.label = '카드'
+      el.innerPadding = { top: 20, right: 16, bottom: 20, left: 16 }
     } else if (type === 'modal') {
       el.heightPx = 480
       el.label = '모달'
+      el.innerPadding = { top: 48, right: 20, bottom: 24, left: 20 }
     }
 
     setState((prev) => ({
@@ -196,6 +198,17 @@ export function useLayoutEditor(gameId: string) {
         dirty: true,
       }
     })
+  }, [])
+
+  // Set parent (nest element inside card/modal)
+  const setParent = useCallback((childId: string, parentId: string | undefined) => {
+    setState((prev) => ({
+      ...prev,
+      dirty: true,
+      elements: prev.elements.map((el) =>
+        el.id === childId ? { ...el, parentId } as LayoutElement : el,
+      ),
+    }))
   }, [])
 
   // Set image for element
@@ -372,6 +385,7 @@ export function useLayoutEditor(gameId: string) {
     addElement,
     removeElement,
     duplicateElement,
+    setParent,
     setElementImage,
     save,
     createScreen,
