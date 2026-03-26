@@ -141,6 +141,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
           {/* Right: Inspector + Element list */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <Inspector
+              elements={editor.elements}
               element={selectedElement}
               onUpdate={editor.updateElement}
               onRemove={editor.removeElement}

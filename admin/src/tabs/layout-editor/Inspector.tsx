@@ -10,6 +10,7 @@ const COLOR_ENTRIES = Object.entries(colors) as [string, string][]
 type BgType = 'transparent' | 'solid' | 'gradient'
 
 interface Props {
+  elements: LayoutElement[]
   element: LayoutElement | null
   onUpdate: (id: string, patch: Partial<LayoutElement>) => void
   onRemove: (id: string) => void
@@ -23,7 +24,7 @@ interface Props {
 }
 
 export default function Inspector({
-  element, onUpdate, onRemove, onDuplicate,
+  elements, element, onUpdate, onRemove, onDuplicate,
   padding, onPaddingUpdate,
   bgType, bgColor, bgGradient, onBgUpdate,
 }: Props) {
@@ -108,12 +109,19 @@ export default function Inspector({
       )}
 
       {/* Group */}
-      {el.positioning === 'group' && (
-        <Section title="그룹 배치">
-          <Field label="위 간격"><NumInput value={(el as GroupElement).gapPx} onChange={(v) => update({ gapPx: v })} /></Field>
-          <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>순서/행 변경은 요소 목록에서 드래그</p>
-        </Section>
-      )}
+      {el.positioning === 'group' && (() => {
+        const ge = el as GroupElement
+        const sameRow = elements.filter((e): e is GroupElement => e.positioning === 'group' && e.id !== el.id && e.order === ge.order)
+        return (
+          <Section title="그룹 배치">
+            <Field label="위 간격"><NumInput value={ge.gapPx} onChange={(v) => update({ gapPx: v })} /></Field>
+            {sameRow.length > 0 && (
+              <Field label="항목 간 간격"><NumInput value={ge.hGapPx ?? 8} onChange={(v) => update({ hGapPx: v })} /></Field>
+            )}
+            <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>순서/행 변경은 요소 목록에서 드래그</p>
+          </Section>
+        )
+      })()}
 
       {/* Anchor */}
       {el.positioning === 'anchor' && (

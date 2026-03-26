@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import type { LayoutElement, ScreenLayout, LayoutIndex, GroupElement, AnchorElement } from './types'
 import { R2_LAYOUT_INDEX_KEY, DESIGN_W, PHONE_PREVIEW_W, PHONE_PREVIEW_H, DEFAULT_SCREENS, DEFAULT_GAP, DEFAULT_PADDING } from './constants'
 import { getJson, putJson, uploadBlob } from '../../api'
+import { computePreviewLayout } from './layout-compute'
 
 const R2_PUBLIC = 'https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev'
 
@@ -257,10 +258,7 @@ export function useLayoutEditor(gameId: string) {
     setState((prev) => {
       const { padding, imageSizes } = prev
       const contentW = DESIGN_W - padding.left - padding.right
-      // 스케일은 가로 기준이므로, 유효 세로 높이를 프리뷰 비율로 계산
-      const effectiveH = PHONE_PREVIEW_H / (PHONE_PREVIEW_W / DESIGN_W)
-      const contentH = effectiveH - padding.top - padding.bottom
-      const MIN_GAP = 8
+      const MIN_GAP = 4
 
       // 1단계: 너비 맞춤
       let elements = prev.elements.map((el) => {
@@ -276,74 +274,72 @@ export function useLayoutEditor(gameId: string) {
         return el
       }) as LayoutElement[]
 
-      // 행 정보 수집
+      // 행 정보
       const groupEls = elements.filter((e): e is GroupElement => e.positioning === 'group')
-      const rowMap = new Map<number, GroupElement[]>()
-      for (const el of groupEls) {
-        const row = rowMap.get(el.order) || []
-        row.push(el)
-        rowMap.set(el.order, row)
-      }
-      const rowOrders = [...rowMap.keys()].sort((a, b) => a - b)
+      const rowOrders = [...new Set(groupEls.map((e) => e.order))].sort((a, b) => a - b)
       const rowCount = rowOrders.length
-
-      // 2단계: 행별 높이 계산 함수
-      const calcRowHeights = (els: LayoutElement[], scaleFactor = 1): number[] => {
-        const heights: number[] = []
-        for (const order of rowOrders) {
-          const rowEls = rowMap.get(order)!
-          const n = rowEls.length
-          let maxH = 0
-          for (const el of rowEls) {
-            const w = el.widthMode === 'fixed' ? el.widthPx : (contentW - (el.hGapPx ?? 8) * (n - 1)) / n
-            const found = els.find((e) => e.id === el.id) || el
-            if (found.type === 'image' && imageSizes[found.id]) {
-              const imgW = (found.widthMode === 'fixed' ? found.widthPx : w) * scaleFactor
-              maxH = Math.max(maxH, imageSizes[found.id].h * (imgW / imageSizes[found.id].w))
-            } else if (found.type === 'button') {
-              const fontSize = found.buttonStyle?.scaleKey ? 52 : 52
-              maxH = Math.max(maxH, fontSize)
-            } else {
-              const fontSize = found.textStyle?.fontSizePx || 14
-              const lines = (found.label || found.id).split('\n').length
-              maxH = Math.max(maxH, fontSize * 1.4 * lines)
-            }
-          }
-          heights.push(maxH)
-        }
-        return heights
-      }
-
-      // 3단계: 전체가 패딩 안에 들어올 때까지 이미지 축소
-      let imgScale = 1
       const gapSlots = Math.max(0, rowCount - 1)
-      for (let i = 0; i < 20; i++) {
-        const heights = calcRowHeights(elements, imgScale)
-        const totalH = heights.reduce((s, h) => s + h, 0) + gapSlots * MIN_GAP
-        if (totalH <= contentH) break
-        imgScale *= 0.9
-      }
 
-      // 이미지 축소 적용
-      if (imgScale < 1) {
+      // 2단계: 이미지 축소 — 실제 렌더 결과로 확인
+      const scale = PHONE_PREVIEW_W / DESIGN_W
+      const padTop = padding.top * scale
+      const padBottom = padding.bottom * scale
+      const maxContentH = PHONE_PREVIEW_H - padTop - padBottom
+
+      for (let i = 0; i < 20; i++) {
+        // 임시 gap으로 렌더링
+        const testEls = elements.map((el) => {
+          if (el.positioning !== 'group') return el
+          const isFirst = (el as GroupElement).order === rowOrders[0]
+          return { ...el, gapPx: isFirst ? 0 : MIN_GAP }
+        }) as LayoutElement[]
+
+        const positions = computePreviewLayout(testEls, PHONE_PREVIEW_W, PHONE_PREVIEW_H, imageSizes, 'top', padding)
+        if (positions.length === 0) break
+
+        const maxY = Math.max(...positions.map((p) => p.y + p.h * (1 - p.originY)))
+        const usedH = maxY - padTop
+        if (usedH <= maxContentH) break
+
+        // 이미지 축소
         elements = elements.map((el) => {
           if (el.positioning === 'group' && el.type === 'image') {
-            return { ...el, widthPx: Math.round(el.widthPx * imgScale) }
+            return { ...el, widthPx: Math.round(el.widthPx * 0.85) }
           }
           return el
         }) as LayoutElement[]
       }
 
-      // 4단계: 균등 간격 계산
-      // 첫 번째 행: gapPx=0 (패딩 top이 역할)
-      // 두 번째부터: 남은 공간 / (행수 - 1)
-      const finalHeights = calcRowHeights(elements, 1)
-      const totalElH = finalHeights.reduce((s, h) => s + h, 0)
+      // 3단계: 실제 요소 높이 합 계산 (gap=0으로)
+      const zeroGapEls = elements.map((el) => {
+        if (el.positioning !== 'group') return el
+        const isFirst = (el as GroupElement).order === rowOrders[0]
+        return { ...el, gapPx: isFirst ? 0 : 0 }
+      }) as LayoutElement[]
+      const zeroPositions = computePreviewLayout(zeroGapEls, PHONE_PREVIEW_W, PHONE_PREVIEW_H, imageSizes, 'top', padding)
+
+      // 행별 bottom 위치로 총 높이 계산
+      const rowBottoms = new Map<number, number>()
+      const rowTops = new Map<number, number>()
+      for (const pos of zeroPositions) {
+        const el = elements.find((e) => e.id === pos.id) as GroupElement | undefined
+        if (!el || el.positioning !== 'group') continue
+        const top = pos.y - pos.h * pos.originY
+        const bottom = pos.y + pos.h * (1 - pos.originY)
+        rowBottoms.set(el.order, Math.max(rowBottoms.get(el.order) || 0, bottom))
+        rowTops.set(el.order, Math.min(rowTops.get(el.order) || Infinity, top))
+      }
+
+      const totalElH = rowOrders.reduce((sum, order) => {
+        return sum + (rowBottoms.get(order) || 0) - (rowTops.get(order) || 0)
+      }, 0)
+
+      // 4단계: 간격 균등 배분
       const gap = gapSlots > 0
-        ? Math.max(MIN_GAP, Math.floor((contentH - totalElH) / gapSlots))
+        ? Math.max(MIN_GAP, Math.floor((maxContentH - totalElH) / gapSlots / scale))
         : 0
 
-      // 5단계: 간격 적용 — 첫 행 0, 나머지 균등
+      // 5단계: 적용
       const firstOrder = rowOrders[0]
       elements = elements.map((el) => {
         if (el.positioning === 'group') {
