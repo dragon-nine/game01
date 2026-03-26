@@ -36,12 +36,14 @@ export function computePreviewLayout(
   imageSizes: Record<string, { w: number; h: number }>,
   _groupVAlign: 'center' | 'top' = 'center',
   padding = { top: 60, right: 24, bottom: 40, left: 24 },
-  _allElements?: LayoutElement[],  // 내부 재귀용 — 전체 요소 참조
+  _allElements?: LayoutElement[],
+  _designW?: number,  // 내부 재귀용 — 기준 디자인 너비
 ): ComputedPos[] {
   const allElements = _allElements || elements
-  const scale = screenW / DESIGN_W
+  const designW = _designW || DESIGN_W
+  const scale = screenW / designW
   const results: ComputedPos[] = []
-  const contentW = DESIGN_W - padding.left - padding.right
+  const contentW = designW - padding.left - padding.right
   const contentLeft = padding.left * scale
 
   // Group elements (현재 전달된 elements만, parentId 필터 없음)
@@ -78,10 +80,11 @@ export function computePreviewLayout(
         // 자식 기반 높이 자동 계산
         const children = allElements.filter((e) => e.parentId === el.id && e.visible !== false)
         const ip = el.innerPadding || { top: 16, right: 16, bottom: 16, left: 16 }
-        const innerW = elW - (ip.left + ip.right) * scale
+        const childDesignW = (elW / scale) - ip.left - ip.right
+        const childScreenW = childDesignW * scale
         if (children.length > 0) {
           const cleanChildren = children.map((c) => ({ ...c, parentId: undefined }))
-          const childPos = computePreviewLayout(cleanChildren, innerW, 9999, imageSizes, 'top', { top: 0, right: 0, bottom: 0, left: 0 }, allElements)
+          const childPos = computePreviewLayout(cleanChildren, childScreenW, 9999, imageSizes, 'top', { top: 0, right: 0, bottom: 0, left: 0 }, allElements, childDesignW)
           const childBottom = childPos.length > 0 ? Math.max(...childPos.map((p) => p.y + p.h * (1 - p.originY))) : 0
           maxH = Math.max(maxH, childBottom + (ip.top + ip.bottom) * scale)
         } else {
@@ -191,14 +194,15 @@ export function computePreviewLayout(
       const parentLeft = parentPos.x - parentPos.w * parentPos.originX
       const parentTop = parentPos.y - parentPos.h * parentPos.originY
 
-      const innerW = parentPos.w - (ip.left + ip.right) * scale
-      const innerH = parentPos.h - (ip.top + ip.bottom) * scale
-      const innerPadding = { top: 0, right: 0, bottom: 0, left: 0 }
+      // 자식 레이아웃: 부모 내부를 하나의 화면처럼 취급
+      const innerDesignW = (parentPos.w / scale) - ip.left - ip.right
+      const innerScreenW = innerDesignW * scale
+      const innerScreenH = parentPos.h - (ip.top + ip.bottom) * scale
 
-      // 자식에서 parentId를 일시 제거해서 재귀에서 group 필터 통과
       const childrenClean = children.map((c) => ({ ...c, parentId: undefined }))
       const childPositions = computePreviewLayout(
-        childrenClean, innerW, innerH, imageSizes, 'top', innerPadding, allElements,
+        childrenClean, innerScreenW, innerScreenH, imageSizes, 'center',
+        { top: 0, right: 0, bottom: 0, left: 0 }, allElements, innerDesignW,
       )
 
       // 부모 위치 기준으로 오프셋
