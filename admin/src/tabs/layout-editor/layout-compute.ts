@@ -39,7 +39,7 @@ function calcContainerHeight(
   const children = allElements.filter((e) => e.parentId === el.id && e.visible !== false)
   const ip = el.innerPadding || { top: 16, right: 16, bottom: 16, left: 16 }
 
-  if (children.length === 0) return (ip.top + ip.bottom + 40) * scale
+  if (children.length === 0) return (ip.top + ip.bottom) * scale
 
   const groups = children.filter((c): c is GroupElement => c.positioning === 'group')
   const rowMap = new Map<number, GroupElement[]>()
@@ -156,6 +156,7 @@ export function computePreviewLayout(
     const n = row.elements.length
 
     const calcElH = (el: LayoutElement, elW: number) => {
+      if (el.type === 'card' || el.type === 'modal') return calcContainerHeight(el, allElements, imageSizes, scale)
       if (el.type === 'image' && imageSizes[el.id]) return imageSizes[el.id].h * (elW / imageSizes[el.id].w)
       if (el.heightPx) return el.heightPx * scale
       if (el.type === 'button') return calcButtonHeight(el, scale)

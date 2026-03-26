@@ -241,13 +241,20 @@ function ChallengeSection({ gameId, onBanner }: { gameId: string; onBanner: Prop
         변수: <code style={{ background: 'var(--bg-tertiary)', padding: '1px 5px', borderRadius: 4 }}>{'{s}'}</code> = 현재 점수 · <code style={{ background: 'var(--bg-tertiary)', padding: '1px 5px', borderRadius: 4 }}>{'{b}'}</code> = 최고기록
       </p>
 
-      {/* 필터 */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+      {/* 필터 — pill 토글 */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
         {([['all', `전체 ${quotes.length}`], ['normal', `일반 ${normalCount}`], ['record', `신기록 ${recordCount}`]] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setFilter(key)}
-            className={filter === key ? 'ct-filter-active' : 'ct-filter'}
+            style={{
+              padding: '5px 14px', borderRadius: 20,
+              border: filter === key ? '1px solid #111' : '1px solid #ddd',
+              background: filter === key ? '#111' : '#fff',
+              color: filter === key ? '#fff' : '#888',
+              fontSize: 13, fontWeight: filter === key ? 600 : 400,
+              cursor: 'pointer',
+            }}
           >
             {label}
           </button>
@@ -333,27 +340,38 @@ export default function ContentTab({ gameId, gameName, onBanner }: Props) {
   const [activeTab, setActiveTab] = useState<ContentTabId>('gameover')
 
   return (
-    <div>
-      <h1 className="page-title">콘텐츠 관리</h1>
-      <p className="page-subtitle">{gameName} — 게임 내 텍스트 콘텐츠</p>
+    <div style={{ padding: 24, maxWidth: 1200 }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 4px', color: '#111' }}>콘텐츠 관리</h1>
+        <p style={{ fontSize: 14, color: '#888', margin: 0 }}>{gameName} — 게임 내 텍스트 콘텐츠</p>
+      </div>
 
-      {/* 탭 바 */}
-      <div className="content-tab-bar">
+      {/* 탭 바 — 디자인 시스템 underline 스타일 */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #e8e8e8' }}>
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={`content-tab-btn${activeTab === t.id ? ' active' : ''}`}
             onClick={() => setActiveTab(t.id)}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderBottom: activeTab === t.id ? '2px solid #111' : '2px solid transparent',
+              marginBottom: -2,
+              background: 'transparent',
+              color: activeTab === t.id ? '#111' : '#999',
+              fontWeight: activeTab === t.id ? 700 : 400,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="card">
-        {activeTab === 'gameover' && <GameOverSection gameId={gameId} onBanner={onBanner} />}
-        {activeTab === 'challenge' && <ChallengeSection gameId={gameId} onBanner={onBanner} />}
-      </div>
+      {activeTab === 'gameover' && <GameOverSection gameId={gameId} onBanner={onBanner} />}
+      {activeTab === 'challenge' && <ChallengeSection gameId={gameId} onBanner={onBanner} />}
     </div>
   )
 }
