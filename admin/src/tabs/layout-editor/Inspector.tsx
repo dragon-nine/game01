@@ -82,7 +82,6 @@ export default function Inspector({
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         <Tag>{el.positioning}</Tag>
-        {el.locked && <Tag>잠금</Tag>}
       </div>
 
       {/* Parent */}
@@ -291,15 +290,6 @@ export default function Inspector({
         </Section>
       )}
 
-      {/* Toggles */}
-      <div style={{ display: 'flex', gap: 12, marginTop: 14, paddingTop: 12, borderTop: '1px solid #eee' }}>
-        <label style={{ fontSize: 12, color: '#666', display: 'flex', gap: 4, alignItems: 'center', cursor: 'pointer' }}>
-          <input type="checkbox" checked={el.visible !== false} onChange={(e) => update({ visible: e.target.checked })} /> 표시
-        </label>
-        <label style={{ fontSize: 12, color: '#666', display: 'flex', gap: 4, alignItems: 'center', cursor: 'pointer' }}>
-          <input type="checkbox" checked={!!el.locked} onChange={(e) => update({ locked: e.target.checked })} /> 잠금
-        </label>
-      </div>
     </Panel>
   )
 }
