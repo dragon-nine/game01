@@ -5,26 +5,64 @@ import type { TypeScaleKey, ButtonStyleType } from '../../components/common/desi
 const SCALE_KEYS = Object.keys(typeScale) as TypeScaleKey[]
 const COLOR_ENTRIES = Object.entries(colors) as [string, string][]
 
+type BgType = 'transparent' | 'solid' | 'gradient'
+
 interface Props {
   element: LayoutElement | null
   onUpdate: (id: string, patch: Partial<LayoutElement>) => void
   onRemove: (id: string) => void
   onDuplicate: (id: string) => void
+  bgType: BgType
   bgColor: string
-  onBgColorChange: (c: string) => void
+  bgGradientFrom: string
+  bgGradientTo: string
+  bgGradientDirection: string
+  onBgUpdate: (patch: { bgType?: BgType; bgColor?: string; bgGradientFrom?: string; bgGradientTo?: string; bgGradientDirection?: string }) => void
   groupVAlign: 'center' | 'top'
   onGroupVAlignChange: (v: 'center' | 'top') => void
 }
 
 export default function Inspector({
   element, onUpdate, onRemove, onDuplicate,
-  bgColor, onBgColorChange, groupVAlign, onGroupVAlignChange,
+  bgType, bgColor, bgGradientFrom, bgGradientTo, bgGradientDirection,
+  onBgUpdate, groupVAlign, onGroupVAlignChange,
 }: Props) {
   if (!element) {
     return (
       <Panel>
         <PanelTitle>화면 설정</PanelTitle>
-        <Field label="배경색"><ColorSelect value={bgColor} onChange={onBgColorChange} /></Field>
+        <Field label="배경">
+          <select value={bgType} onChange={(e) => onBgUpdate({ bgType: e.target.value as BgType })} style={selectStyle}>
+            <option value="transparent">투명</option>
+            <option value="solid">단색</option>
+            <option value="gradient">그라데이션</option>
+          </select>
+        </Field>
+        {bgType === 'solid' && (
+          <Field label="배경색"><ColorSelect value={bgColor} onChange={(v) => onBgUpdate({ bgColor: v })} /></Field>
+        )}
+        {bgType === 'gradient' && (
+          <>
+            <Field label="시작 색상"><ColorSelect value={bgGradientFrom} onChange={(v) => onBgUpdate({ bgGradientFrom: v })} /></Field>
+            <Field label="끝 색상"><ColorSelect value={bgGradientTo} onChange={(v) => onBgUpdate({ bgGradientTo: v })} /></Field>
+            <Field label="방향">
+              <select value={bgGradientDirection} onChange={(e) => onBgUpdate({ bgGradientDirection: e.target.value })} style={selectStyle}>
+                <option value="to bottom">↓ 위 → 아래</option>
+                <option value="to top">↑ 아래 → 위</option>
+                <option value="to right">→ 왼쪽 → 오른쪽</option>
+                <option value="to left">← 오른쪽 → 왼쪽</option>
+                <option value="135deg">↘ 대각선</option>
+                <option value="45deg">↗ 대각선</option>
+              </select>
+            </Field>
+            {/* Preview */}
+            <div style={{
+              height: 32, borderRadius: 6, marginTop: 4,
+              background: `linear-gradient(${bgGradientDirection}, ${bgGradientFrom}, ${bgGradientTo})`,
+              border: '1px solid #eee',
+            }} />
+          </>
+        )}
         <Field label="그룹 정렬">
           <select value={groupVAlign} onChange={(e) => onGroupVAlignChange(e.target.value as 'center' | 'top')} style={selectStyle}>
             <option value="center">세로 중앙</option>

@@ -118,7 +118,12 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
             elements={editor.elements}
             imageSizes={editor.imageSizes}
             groupVAlign={editor.groupVAlign}
-            bgColor={editor.bgColor}
+            bgColor={
+              editor.bgType === 'transparent' ? 'transparent'
+                : editor.bgType === 'gradient'
+                  ? `linear-gradient(${editor.bgGradientDirection}, ${editor.bgGradientFrom}, ${editor.bgGradientTo})`
+                  : editor.bgColor
+            }
             screenKey={editor.screenKey}
             gameId={gameId}
             selectedId={editor.selectedId}
@@ -133,8 +138,12 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
               onUpdate={editor.updateElement}
               onRemove={editor.removeElement}
               onDuplicate={editor.duplicateElement}
+              bgType={editor.bgType}
               bgColor={editor.bgColor}
-              onBgColorChange={editor.setBgColor}
+              bgGradientFrom={editor.bgGradientFrom}
+              bgGradientTo={editor.bgGradientTo}
+              bgGradientDirection={editor.bgGradientDirection}
+              onBgUpdate={editor.updateBg}
               groupVAlign={editor.groupVAlign}
               onGroupVAlignChange={editor.setGroupVAlign}
             />

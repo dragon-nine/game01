@@ -114,7 +114,9 @@ export default function PhoneCanvas({
         style={{
           width: PHONE_PREVIEW_W,
           height: PHONE_PREVIEW_H,
-          background: bgColor,
+          background: bgColor === 'transparent'
+            ? 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 0 0 / 16px 16px'
+            : bgColor,
           borderRadius: 4,
           position: 'relative',
           overflow: 'hidden',

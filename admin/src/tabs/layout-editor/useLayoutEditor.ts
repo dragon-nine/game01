@@ -12,7 +12,11 @@ interface EditorState {
   screens: LayoutIndex['screens']
   elements: LayoutElement[]
   groupVAlign: 'center' | 'top'
+  bgType: 'transparent' | 'solid' | 'gradient'
   bgColor: string
+  bgGradientFrom: string
+  bgGradientTo: string
+  bgGradientDirection: string
   selectedId: string | null
   imageSizes: Record<string, { w: number; h: number }>
   dirty: boolean
@@ -30,7 +34,11 @@ export function useLayoutEditor(gameId: string) {
     screens: [],
     elements: [],
     groupVAlign: 'center',
+    bgType: 'solid',
     bgColor: '#000000',
+    bgGradientFrom: '#2a0c10',
+    bgGradientTo: '#000000',
+    bgGradientDirection: 'to bottom',
     selectedId: null,
     imageSizes: {},
     dirty: false,
@@ -76,7 +84,11 @@ export function useLayoutEditor(gameId: string) {
           ...prev,
           elements: layout.elements,
           groupVAlign: layout.groupVAlign || 'center',
+          bgType: layout.bgType || 'solid',
           bgColor: layout.bgColor || '#000000',
+          bgGradientFrom: layout.bgGradientFrom || '#2a0c10',
+          bgGradientTo: layout.bgGradientTo || '#000000',
+          bgGradientDirection: layout.bgGradientDirection || 'to bottom',
           imageSizes: sizes,
           loading: false,
           dirty: false,
@@ -198,7 +210,11 @@ export function useLayoutEditor(gameId: string) {
         designWidth: DESIGN_W,
         elements: state.elements,
         groupVAlign: state.groupVAlign,
+        bgType: state.bgType,
         bgColor: state.bgColor,
+        bgGradientFrom: state.bgGradientFrom,
+        bgGradientTo: state.bgGradientTo,
+        bgGradientDirection: state.bgGradientDirection,
       }
       const blob = new Blob([JSON.stringify(layout, null, 2)], { type: 'application/json' })
       const file = new File([blob], `${state.screenKey}.json`, { type: 'application/json' })
@@ -226,8 +242,8 @@ export function useLayoutEditor(gameId: string) {
   }, [state.screens, loadScreen])
 
   // Update bg
-  const setBgColor = useCallback((bgColor: string) => {
-    setState((prev) => ({ ...prev, bgColor, dirty: true }))
+  const updateBg = useCallback((patch: Partial<Pick<EditorState, 'bgType' | 'bgColor' | 'bgGradientFrom' | 'bgGradientTo' | 'bgGradientDirection'>>) => {
+    setState((prev) => ({ ...prev, ...patch, dirty: true }))
   }, [])
 
   const setGroupVAlign = useCallback((groupVAlign: 'center' | 'top') => {
@@ -245,7 +261,7 @@ export function useLayoutEditor(gameId: string) {
     setElementImage,
     save,
     createScreen,
-    setBgColor,
+    updateBg,
     setGroupVAlign,
   }
 }
