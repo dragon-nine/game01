@@ -18,14 +18,11 @@ interface Props {
   bgColor: string
   bgGradient: string
   onBgUpdate: (patch: { bgType?: BgType; bgColor?: string; bgGradient?: string }) => void
-  groupVAlign: 'center' | 'top'
-  onGroupVAlignChange: (v: 'center' | 'top') => void
 }
 
 export default function Inspector({
   element, onUpdate, onRemove, onDuplicate,
-  bgType, bgColor, bgGradient,
-  onBgUpdate, groupVAlign, onGroupVAlignChange,
+  bgType, bgColor, bgGradient, onBgUpdate,
 }: Props) {
   if (!element) {
     return (
@@ -42,31 +39,12 @@ export default function Inspector({
           <Field label="배경색"><ColorSelect value={bgColor} onChange={(v) => onBgUpdate({ bgColor: v })} /></Field>
         )}
         {bgType === 'gradient' && (
-          <>
-            <Field label="그라데이션">
-              <select value={bgGradient} onChange={(e) => onBgUpdate({ bgGradient: e.target.value })} style={selectStyle}>
-                {GRADIENT_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
-              </select>
-            </Field>
-            {/* Preview */}
-            {(() => {
-              const g = gradients[bgGradient as GradientKey]
-              return g ? (
-                <div style={{
-                  height: 32, borderRadius: 6, marginTop: 4,
-                  background: `linear-gradient(${g.direction}, ${g.from}, ${g.to})`,
-                  border: '1px solid #eee',
-                }} />
-              ) : null
-            })()}
-          </>
+          <Field label="그라데이션">
+            <select value={bgGradient} onChange={(e) => onBgUpdate({ bgGradient: e.target.value })} style={selectStyle}>
+              {GRADIENT_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
+            </select>
+          </Field>
         )}
-        <Field label="그룹 정렬">
-          <select value={groupVAlign} onChange={(e) => onGroupVAlignChange(e.target.value as 'center' | 'top')} style={selectStyle}>
-            <option value="center">세로 중앙</option>
-            <option value="top">상단 고정</option>
-          </select>
-        </Field>
         <p style={{ fontSize: 12, color: '#999', marginTop: 16 }}>요소를 클릭하면 속성을 편집할 수 있습니다.</p>
       </Panel>
     )

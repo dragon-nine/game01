@@ -147,8 +147,6 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
               bgColor={editor.bgColor}
               bgGradient={editor.bgGradient}
               onBgUpdate={editor.updateBg}
-              groupVAlign={editor.groupVAlign}
-              onGroupVAlignChange={editor.setGroupVAlign}
             />
             <ElementList
               elements={editor.elements}

@@ -238,10 +238,6 @@ export function useLayoutEditor(gameId: string) {
     setState((prev) => ({ ...prev, ...patch, dirty: true }))
   }, [])
 
-  const setGroupVAlign = useCallback((groupVAlign: 'center' | 'top') => {
-    setState((prev) => ({ ...prev, groupVAlign, dirty: true }))
-  }, [])
-
   return {
     ...state,
     loadScreen,
@@ -254,6 +250,5 @@ export function useLayoutEditor(gameId: string) {
     save,
     createScreen,
     updateBg,
-    setGroupVAlign,
   }
 }
