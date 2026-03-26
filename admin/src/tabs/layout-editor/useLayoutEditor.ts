@@ -128,7 +128,7 @@ export function useLayoutEditor(gameId: string) {
   }, [])
 
   // Add element
-  const addElement = useCallback((type: 'text' | 'image' | 'button', positioning: 'group' | 'anchor' = 'group') => {
+  const addElement = useCallback((type: 'text' | 'image' | 'button' | 'card' | 'modal', positioning: 'group' | 'anchor' = 'group') => {
     const id = makeId()
     const maxOrder = state.elements
       .filter((e): e is GroupElement => e.positioning === 'group')
@@ -152,6 +152,12 @@ export function useLayoutEditor(gameId: string) {
     } else if (type === 'button') {
       el.label = '버튼'
       el.buttonStyle = { styleType: 'outline', bgColor: '#24282c', scaleKey: 'lg' }
+    } else if (type === 'card') {
+      el.heightPx = 300
+      el.label = '카드'
+    } else if (type === 'modal') {
+      el.heightPx = 480
+      el.label = '모달'
     }
 
     setState((prev) => ({

@@ -226,7 +226,7 @@ function ElementRow({ el, selected, dragging, dropOver, onSelect, onDragStart, o
 }
 
 function TypeDot({ type }: { type: string }) {
-  const bg: Record<string, string> = { text: '#3182f6', image: '#e53935', button: '#111' }
+  const bg: Record<string, string> = { text: '#3182f6', image: '#e53935', button: '#111', card: '#8b5cf6', modal: '#f59e0b' }
   return <div style={{ width: 8, height: 8, borderRadius: 4, background: bg[type] || '#999', flexShrink: 0 }} />
 }
 

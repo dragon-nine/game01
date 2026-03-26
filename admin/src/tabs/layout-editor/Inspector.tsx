@@ -238,6 +238,28 @@ export default function Inspector({
         </Section>
       )}
 
+      {/* Card style */}
+      {el.type === 'card' && (
+        <Section title="카드 스타일">
+          <Field label="배경색">
+            <UnifiedColorSelect
+              value={COLOR_ENTRIES.find(([, hex]) => hex === (el.buttonStyle?.bgColor || '#2a292e'))?.[0] || 'ash'}
+              onChange={(val, type) => {
+                const hex = type === 'gradient' ? val : (colors[val as keyof typeof colors] || val)
+                update({ buttonStyle: { styleType: 'flat', bgColor: hex } as any })
+              }}
+            />
+          </Field>
+        </Section>
+      )}
+
+      {/* Modal — 고정 스타일, 높이만 조정 */}
+      {el.type === 'modal' && (
+        <Section title="모달">
+          <p style={{ fontSize: 11, color: '#999', margin: 0 }}>배경 ash (#2a292e) + X 버튼 고정</p>
+        </Section>
+      )}
+
       {/* Toggles */}
       <div style={{ display: 'flex', gap: 12, marginTop: 14, paddingTop: 12, borderTop: '1px solid #eee' }}>
         <label style={{ fontSize: 12, color: '#666', display: 'flex', gap: 4, alignItems: 'center', cursor: 'pointer' }}>
@@ -307,7 +329,7 @@ function ColorSelect({ value, onChange }: { value: string; onChange: (v: string)
 }
 
 function TypeBadge({ type }: { type: string }) {
-  const bg: Record<string, string> = { text: '#3182f6', image: '#e53935', button: '#111' }
+  const bg: Record<string, string> = { text: '#3182f6', image: '#e53935', button: '#111', card: '#8b5cf6', modal: '#f59e0b' }
   return <span style={{ fontSize: 10, background: bg[type] || '#999', color: '#fff', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>{type}</span>
 }
 

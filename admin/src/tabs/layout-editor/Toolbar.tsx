@@ -1,5 +1,5 @@
 interface Props {
-  onAddElement: (type: 'text' | 'image' | 'button', positioning: 'group' | 'anchor') => void
+  onAddElement: (type: 'text' | 'image' | 'button' | 'card' | 'modal', positioning: 'group' | 'anchor') => void
   onOpenAssetPicker: () => void
   onAutoFit: () => void
 }
@@ -11,6 +11,8 @@ export default function Toolbar({ onAddElement, onOpenAssetPicker, onAutoFit }: 
       <ToolBtn label="텍스트" onClick={() => onAddElement('text', 'group')} />
       <ToolBtn label="이미지" onClick={onOpenAssetPicker} />
       <ToolBtn label="버튼" onClick={() => onAddElement('button', 'group')} />
+      <ToolBtn label="카드" onClick={() => onAddElement('card', 'group')} />
+      <ToolBtn label="모달" onClick={() => onAddElement('modal', 'group')} />
       <div style={{ width: 1, height: 24, background: '#e8e8e8', margin: '0 8px' }} />
       <div style={{ fontSize: 12, color: '#999', display: 'flex', alignItems: 'center', marginRight: 4 }}>앵커</div>
       <ToolBtn label="텍스트" onClick={() => onAddElement('text', 'anchor')} />

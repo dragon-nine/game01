@@ -49,6 +49,38 @@ export default function PhoneCanvasElement({ el, pos, scale, selected, assetUrl,
       )
     }
 
+    if (el.type === 'card') {
+      return (
+        <div style={{
+          width: '100%', height: '100%',
+          background: el.buttonStyle?.bgColor || '#2a292e',
+          borderRadius: 16 * scale,
+          border: `1px solid rgba(255,255,255,0.08)`,
+        }} />
+      )
+    }
+
+    if (el.type === 'modal') {
+      return (
+        <div style={{
+          width: '100%', height: '100%',
+          background: '#2a292e',
+          borderRadius: 20 * scale,
+          position: 'relative',
+        }}>
+          {/* X 버튼 */}
+          <div style={{
+            position: 'absolute', top: 10 * scale, right: 10 * scale,
+            width: 28 * scale, height: 28 * scale,
+            background: '#000', borderRadius: 999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ color: '#fff', fontSize: 14 * scale, fontWeight: 700, lineHeight: 1 }}>✕</span>
+          </div>
+        </div>
+      )
+    }
+
     if (el.type === 'button') {
       const bs = el.buttonStyle
       const scaleKey = bs?.scaleKey || 'lg'
