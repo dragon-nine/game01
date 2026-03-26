@@ -33,14 +33,14 @@ export default function Inspector({
     return (
       <Panel>
         <PanelTitle>화면 설정</PanelTitle>
-        <Section title="패딩">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <Field label="상"><NumInput value={padding.top} onChange={(v) => onPaddingUpdate({ top: v })} /></Field>
-            <Field label="하"><NumInput value={padding.bottom} onChange={(v) => onPaddingUpdate({ bottom: v })} /></Field>
-            <Field label="좌"><NumInput value={padding.left} onChange={(v) => onPaddingUpdate({ left: v })} /></Field>
-            <Field label="우"><NumInput value={padding.right} onChange={(v) => onPaddingUpdate({ right: v })} /></Field>
+        <Field label="패딩 (상/우/하/좌)">
+          <div style={{ display: 'flex', gap: 4 }}>
+            <NumInput value={padding.top} onChange={(v) => onPaddingUpdate({ top: v })} />
+            <NumInput value={padding.right} onChange={(v) => onPaddingUpdate({ right: v })} />
+            <NumInput value={padding.bottom} onChange={(v) => onPaddingUpdate({ bottom: v })} />
+            <NumInput value={padding.left} onChange={(v) => onPaddingUpdate({ left: v })} />
           </div>
-        </Section>
+        </Field>
         <Field label="배경">
           <select value={bgType} onChange={(e) => onBgUpdate({ bgType: e.target.value as BgType })} style={selectStyle}>
             <option value="transparent">투명</option>
@@ -114,21 +114,6 @@ export default function Inspector({
         </Field>
       )}
 
-      {/* Size */}
-      <Field label="너비">
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <select
-            value={el.widthMode || 'full'}
-            onChange={(e) => update({ widthMode: e.target.value as 'full' | 'fixed' })}
-            style={{ ...selectStyle, width: 80 }}
-          >
-            <option value="full">자동</option>
-            <option value="fixed">고정</option>
-          </select>
-          {(el.widthMode === 'fixed') && <NumInput value={el.widthPx} onChange={(v) => update({ widthPx: v })} />}
-          {(el.widthMode !== 'fixed') && <span style={{ fontSize: 11, color: '#999' }}>패딩 기준 풀 너비</span>}
-        </div>
-      </Field>
       {el.heightPx !== undefined && el.type !== 'card' && el.type !== 'modal' && (
         <Field label="높이 (px)"><NumInput value={el.heightPx} onChange={(v) => update({ heightPx: v })} /></Field>
       )}
