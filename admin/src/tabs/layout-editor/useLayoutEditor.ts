@@ -51,7 +51,14 @@ export function useLayoutEditor(gameId: string) {
       if (!index || !index.screens.length) {
         index = { screens: DEFAULT_SCREENS.map((s) => ({ ...s, updatedAt: new Date().toISOString() })) }
       }
-      setState((prev) => ({ ...prev, screens: index!.screens, loading: false }))
+      // DEFAULT_SCREENS 순서로 정렬, 나머지는 뒤에
+      const order = DEFAULT_SCREENS.map((s) => s.key)
+      const sorted = [...index.screens].sort((a, b) => {
+        const ai = order.indexOf(a.key)
+        const bi = order.indexOf(b.key)
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+      })
+      setState((prev) => ({ ...prev, screens: sorted, loading: false }))
     })()
   }, [])
 
