@@ -25,7 +25,8 @@ export class CommuteScene extends Phaser.Scene {
   private gameStarted = false;
   private hasRevived = false;
   private bgm?: Phaser.Sound.BaseSound;
-  private bgTile?: Phaser.GameObjects.TileSprite;
+  private bgSprites: Phaser.GameObjects.Image[] = [];
+  private bgCycleH = 0; // 1사이클(6장) 총 높이 (스케일 후)
 
   private laneWorldX: number[] = [];
   private laneW = 0;
@@ -52,18 +53,39 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#000000');
 
-    // 배경 이미지 (너비 맞춤, 화면 하단 = 이미지 하단, 위로 반복)
-    if (this.textures.exists('bg-game')) {
-      const bgFrame = this.textures.get('bg-game').getSourceImage();
-      const scale = width / bgFrame.width;
-      const texH = bgFrame.height;
-      const screenHInTex = height / scale;
-      const tileY = -(screenHInTex % texH);
-      this.bgTile = this.add.tileSprite(0, 0, width, height, 'bg-game')
-        .setOrigin(0, 0)
-        .setTileScale(scale, scale)
-        .setTilePosition(0, tileY)
-        .setDepth(0);
+    // 배경 이미지: bg-1~6 순서대로 세로 배치, 무한 루프
+    {
+      const BG_KEYS = ['bg-1', 'bg-2', 'bg-3', 'bg-4', 'bg-5', 'bg-6'];
+      const validKeys = BG_KEYS.filter((k) => this.textures.exists(k));
+
+      if (validKeys.length > 0) {
+        const firstSrc = this.textures.get(validKeys[0]).getSourceImage();
+        const bgScale = width / firstSrc.width;
+
+        // 1사이클 높이 계산
+        const heights = validKeys.map((k) => this.textures.get(k).getSourceImage().height * bgScale);
+        this.bgCycleH = heights.reduce((a, b) => a + b, 0);
+
+        // 화면 커버에 필요한 사이클 수 (위아래 여유분 포함)
+        const cycles = Math.ceil(height / this.bgCycleH) + 2;
+
+        let curY = 0;
+        for (let c = 0; c < cycles; c++) {
+          for (let i = 0; i < validKeys.length; i++) {
+            const spr = this.add.image(0, curY, validKeys[i])
+              .setOrigin(0, 0)
+              .setScale(bgScale)
+              .setDepth(0);
+            this.bgSprites.push(spr);
+            curY += heights[i];
+          }
+        }
+
+        // 화면 하단 맞춤
+        const totalH = curY;
+        const offsetY = height - totalH;
+        for (const spr of this.bgSprites) spr.y += offsetY;
+      }
     }
 
     // 화면에 보이는 2레인 기준으로 크기 계산
@@ -293,12 +315,17 @@ export class CommuteScene extends Phaser.Scene {
     });
 
     // 배경 패럴랙스 스크롤 (도로보다 느리게 → 깊이감)
-    if (this.bgTile) {
-      this.tweens.add({
-        targets: this.bgTile,
-        tilePositionY: this.bgTile.tilePositionY - scrollDelta * 0.3,
-        duration: 100, ease: 'Quad.easeOut',
-      });
+    if (this.bgSprites.length > 0) {
+      const dy = -scrollDelta * 0.3;
+      const totalSpriteH = this.bgCycleH * Math.ceil(this.bgSprites.length / 6);
+      for (const spr of this.bgSprites) {
+        spr.y += dy;
+      }
+      // 래핑: 위로 벗어나면 아래로, 아래로 벗어나면 위로
+      for (const spr of this.bgSprites) {
+        if (spr.y + spr.displayHeight < -this.bgCycleH) spr.y += totalSpriteH;
+        if (spr.y > this.scale.height + this.bgCycleH) spr.y -= totalSpriteH;
+      }
     }
 
     // 토끼 X만 업데이트 (Y는 고정)
