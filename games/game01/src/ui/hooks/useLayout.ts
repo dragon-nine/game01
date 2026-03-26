@@ -33,7 +33,7 @@ export function useLayout(
   const [positions, setPositions] = useState<Map<string, ComputedPosition>>(new Map());
   const [elements, setElements] = useState<LayoutElement[]>([]);
   const [ready, setReady] = useState(false);
-  const scale = window.innerWidth / DESIGN_W;
+  const [scale, setScale] = useState(window.innerWidth / DESIGN_W);
 
   const compute = useCallback(async () => {
     const loaded = await loadLayoutFull('game01', screen);
@@ -53,7 +53,7 @@ export function useLayout(
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    const computed = computeLayout(
+    const result = computeLayout(
       els, w, h,
       (id) => imgSizes.get(id) || null,
       null,
@@ -62,10 +62,11 @@ export function useLayout(
     );
 
     const map = new Map<string, ComputedPosition>();
-    for (const pos of computed) {
+    for (const pos of result.positions) {
       map.set(pos.id, pos);
     }
     setPositions(map);
+    setScale(result.scale);
     setReady(true);
   }, [screen, JSON.stringify(imageMap), JSON.stringify(excludeIds)]);
 

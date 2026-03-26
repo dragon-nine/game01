@@ -84,7 +84,7 @@ export function computeLayout(
   getTextSize?: ((id: string) => { w: number; h: number } | null) | null,
   excludeIds: string[] = [],
   groupVAlign: 'center' | 'top' = 'center',
-): ComputedPosition[] {
+): { positions: ComputedPosition[]; scale: number } {
   const widthScale = screenW / DESIGN_W
   const results: ComputedPosition[] = []
   const excluded = new Set(excludeIds)
@@ -207,5 +207,5 @@ export function computeLayout(
     results.push({ id: el.id, x, y, displayWidth: elW, displayHeight: elH, originX, originY })
   }
 
-  return results
+  return { positions: results, scale }
 }
