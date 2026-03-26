@@ -118,6 +118,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
         onAddElement={editor.addElement}
         onOpenAssetPicker={handleOpenAssetPicker}
         onResetGaps={editor.resetGaps}
+        onFitToPadding={editor.fitToPadding}
       />
 
       {editor.loading ? (

@@ -263,6 +263,27 @@ export function useLayoutEditor(gameId: string) {
     }))
   }, [])
 
+  // 패딩 맞춤 — 모든 요소를 패딩 기준으로 정렬
+  const fitToPadding = useCallback(() => {
+    setState((prev) => {
+      const contentW = DESIGN_W - prev.padding.left - prev.padding.right
+      const updated = prev.elements.map((el) => {
+        if (el.positioning === 'group') {
+          // full 모드로 전환 + 간격 초기화
+          return { ...el, widthMode: 'full' as const, widthPx: contentW, gapPx: DEFAULT_GAP }
+        }
+        if (el.positioning === 'anchor') {
+          // fixed 요소가 패딩 밖이면 패딩 안으로 맞춤
+          const a = el as AnchorElement
+          const maxW = contentW
+          return { ...a, widthPx: Math.min(a.widthPx, maxW) }
+        }
+        return el
+      }) as LayoutElement[]
+      return { ...prev, elements: updated, dirty: true }
+    })
+  }, [])
+
   // Update bg
   const updateBg = useCallback((patch: Partial<Pick<EditorState, 'bgType' | 'bgColor' | 'bgGradient'>>) => {
     setState((prev) => ({ ...prev, ...patch, dirty: true }))
@@ -280,6 +301,7 @@ export function useLayoutEditor(gameId: string) {
     save,
     createScreen,
     resetGaps,
+    fitToPadding,
     updatePadding,
     updateBg,
   }
