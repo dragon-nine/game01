@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { DESIGN_W } from '../../game/layout-types';
 import { LayoutRenderer } from '../components/LayoutRenderer';
@@ -21,12 +21,7 @@ interface Props {
 export function ChallengeOverlay({ score, onClose }: Props) {
   const bestScore = Number(localStorage.getItem('bestScore') || '0');
   const isNewRecord = score >= bestScore && bestScore > 0;
-  const [message, setMessage] = useState(() => getRandomChallengeQuote(score, isNewRecord));
-
-  const handleRefresh = useCallback(() => {
-    gameBus.emit('play-sfx', 'sfx-click');
-    setMessage(getRandomChallengeQuote(score, isNewRecord));
-  }, [score, isNewRecord]);
+  const message = useMemo(() => getRandomChallengeQuote(score, isNewRecord), [score, isNewRecord]);
 
   const handleCTA = useCallback(() => {
     gameBus.emit('play-sfx', 'sfx-click');

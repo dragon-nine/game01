@@ -153,7 +153,8 @@ export function LayoutRenderer({
         const w = el.widthPx * scale;
         const ox = el.offsetX * scale;
         const oy = el.offsetY * scale;
-        const onClick = clickHandlers[el.id];
+        const hasClick = el.id in clickHandlers;
+        const onClick = hasClick ? clickHandlers[el.id] : undefined;
 
         const posStyle: React.CSSProperties = { position: 'absolute', width: w };
         switch (el.anchor) {
@@ -188,7 +189,8 @@ function ElementNode({
 }) {
   const { el, children } = node;
   const isContainer = el.type === 'card' || el.type === 'modal';
-  const onClick = clickHandlers[el.id];
+  const hasClick = el.id in clickHandlers;
+  const onClick = hasClick ? clickHandlers[el.id] : undefined;
 
   // 너비 결정
   const compSize = COMPONENT_SIZES[el.type];
@@ -368,7 +370,7 @@ function RenderElement({ el, scale, imageMap, textOverrides, toggleStates, inRow
         width: w, height: h, borderRadius: h / 2,
         background: on ? '#4ade80' : '#434750',
         position: 'relative', transition: 'background 0.2s',
-        margin: '0 auto', flexShrink: 0,
+        flexShrink: 0,
       }}>
         <div style={{
           width: knob, height: knob, borderRadius: knob / 2,

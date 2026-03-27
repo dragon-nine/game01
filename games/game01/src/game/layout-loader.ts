@@ -52,6 +52,7 @@ export async function loadLayoutFull(_gameId: string, screen: string): Promise<L
   const loaded: LoadedLayout = {
     elements: defaults?.elements || [],
     groupVAlign: defaults?.groupVAlign === 'top' ? 'top' : 'center',
+    padding: (defaults as any)?.padding || { top: 0, right: 0, bottom: 0, left: 0 },
   }
   layoutCache.set(screen, loaded)
   return loaded
