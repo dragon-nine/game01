@@ -182,7 +182,6 @@ export class CommuteScene extends Phaser.Scene {
     const unsubGodMode = gameBus.on('toggle-godmode', () => {
       const next = localStorage.getItem('godMode') !== 'true';
       localStorage.setItem('godMode', String(next));
-      console.log('[DEBUG] godMode:', next);
     });
 
     this.events.on('shutdown', () => {
@@ -391,7 +390,6 @@ export class CommuteScene extends Phaser.Scene {
   /* ── Crash ── */
 
   private onForwardCrash() {
-    console.log('[DEBUG] onForwardCrash, godMode:', this.godMode);
     if (this.godMode) return;
     this.isFalling = true;
     this.player.setHurt(true);
@@ -402,7 +400,6 @@ export class CommuteScene extends Phaser.Scene {
   }
 
   private onCrash() {
-    console.log('[DEBUG] onCrash, godMode:', this.godMode);
     if (this.godMode) return;
     this.isFalling = true;
     this.player.setHurt(true);
@@ -414,13 +411,11 @@ export class CommuteScene extends Phaser.Scene {
   /* ── Death → Revive or Game Over ── */
 
   private onDeath() {
-    console.log('[DEBUG] onDeath called, godMode:', this.godMode, 'localStorage:', localStorage.getItem('godMode'));
     if (this.godMode) {
       this.isFalling = false;
       this.player.setHurt(false);
       this.hud.timeLeft = 5;
       this.hud.startTimer();
-      console.log('[DEBUG] death blocked by godMode');
       return;
     }
     this.gameOver = true;

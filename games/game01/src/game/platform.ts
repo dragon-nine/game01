@@ -32,6 +32,11 @@ export function isToss(): boolean {
   return currentPlatform === 'toss';
 }
 
+/** 실제 토스 인앱 브라우저인지 (SDK 호출 가능 여부) */
+export function isTossNative(): boolean {
+  return typeof navigator !== 'undefined' && /TOSS/i.test(navigator.userAgent);
+}
+
 export function isGoogle(): boolean {
   return currentPlatform === 'google';
 }
