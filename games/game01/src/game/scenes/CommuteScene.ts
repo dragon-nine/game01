@@ -368,7 +368,7 @@ export class CommuteScene extends Phaser.Scene {
 
     // 배경 패럴랙스 스크롤 (도로보다 느리게 → 깊이감)
     if (this.bgSprites.length > 0) {
-      const dy = scrollDelta * 0.3;
+      const dy = scrollDelta * 0.05;
       for (const spr of this.bgSprites) {
         spr.y += dy;
       }
