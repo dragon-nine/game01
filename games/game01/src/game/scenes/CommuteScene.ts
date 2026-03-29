@@ -429,6 +429,7 @@ export class CommuteScene extends Phaser.Scene {
       this.hud.startTimer();
       return;
     }
+    if (this.gameOver) return; // 중복 호출 방지
     this.gameOver = true;
     this.hud.stopTimer();
     this.endGame();
