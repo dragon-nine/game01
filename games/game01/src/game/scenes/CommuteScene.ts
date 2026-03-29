@@ -556,6 +556,11 @@ export class CommuteScene extends Phaser.Scene {
       (this.bgm as Phaser.Sound.WebAudioSound).resume();
     }
 
+    // React HUD 리마운트 후 점수 재전송
+    requestAnimationFrame(() => {
+      this.hud.updateScore(this.score);
+    });
+
     logEvent('revive_complete', { score: this.score });
     this.playSfx('sfx-combo', 0.7);
     this.showPopup('부활!', '#44ff44');
