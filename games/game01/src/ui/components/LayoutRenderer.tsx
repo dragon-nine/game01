@@ -3,6 +3,7 @@
  * 레이아웃 JSON 값을 CSS 속성으로 직접 변환 (computeLayout 높이 계산 없음)
  * 어드민 프리뷰와 동일한 결과를 보장
  */
+import { useState } from 'react';
 import type { LayoutElement, GroupElement, AnchorElement } from '../../game/layout-types';
 import { DESIGN_W } from '../../game/layout-types';
 import { LayoutText } from './LayoutText';
@@ -276,15 +277,25 @@ function ElementNode({
 
 /** 컨테이너(modal/card) 배경 + X 버튼 래퍼 */
 function ContainerWrapper({ el, scale, children }: { el: LayoutElement; scale: number; children: React.ReactNode }) {
+  const [xPressed, setXPressed] = useState(false);
   if (el.type === 'modal') {
     return (
       <div style={{ background: '#2a292e', borderRadius: 20 * scale, position: 'relative', overflow: 'hidden' }}>
         {/* X 버튼 */}
-        <div style={{
-          position: 'absolute', top: 10 * scale, right: 10 * scale, zIndex: 2,
-          width: 28 * scale, height: 28 * scale, borderRadius: 999,
-          background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+        <div
+          onTouchStart={() => setXPressed(true)}
+          onTouchEnd={() => setTimeout(() => setXPressed(false), 100)}
+          onTouchCancel={() => setXPressed(false)}
+          style={{
+            position: 'absolute', top: 14 * scale, right: 14 * scale, zIndex: 2,
+            width: 28 * scale, height: 28 * scale, borderRadius: 999,
+            background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+            transform: xPressed ? 'scale(0.85)' : undefined,
+            transition: 'transform 0.08s ease-out',
+            touchAction: 'manipulation',
+          }}
+        >
           <span style={{ color: '#fff', fontSize: 14 * scale, fontWeight: 700, lineHeight: 1 }}>✕</span>
         </div>
         {children}

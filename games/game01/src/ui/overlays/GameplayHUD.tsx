@@ -49,13 +49,18 @@ export function GameplayHUD() {
 
   const pos = (id: string) => positions.get(id);
 
+  const topAnchors = new Set(
+    elements.filter(e => e.positioning === 'anchor' && (e.anchor === 'top-left' || e.anchor === 'top-right')).map(e => e.id)
+  );
+
   const boxStyle = (id: string): React.CSSProperties => {
     const p = pos(id);
     if (!p) return { display: 'none' };
+    const rawTop = p.y - p.displayHeight * p.originY;
     return {
       position: 'absolute',
       left: p.x - p.displayWidth * p.originX,
-      top: p.y - p.displayHeight * p.originY,
+      top: topAnchors.has(id) ? `calc(var(--sat, 0px) + ${rawTop}px)` : rawTop,
       width: p.displayWidth,
       height: p.displayHeight,
     };

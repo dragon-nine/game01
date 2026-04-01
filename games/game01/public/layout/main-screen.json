@@ -4,11 +4,12 @@
   "elements": [
     {
       "id": "main-text",
-      "positioning": "group",
+      "positioning": "anchor",
       "type": "image",
-      "order": 0,
-      "gapPx": 0,
-      "widthPx": 342,
+      "anchor": "top-left",
+      "offsetX": 30,
+      "offsetY": 120,
+      "widthPx": 331,
       "widthMode": "fixed",
       "assetKey": "game01/assets/main/main-screen/main-text.png"
     },
@@ -16,8 +17,8 @@
       "id": "bestScore",
       "positioning": "group",
       "type": "text",
-      "order": 2,
-      "gapPx": 16,
+      "order": 0,
+      "gapPx": 0,
       "widthPx": 342,
       "textStyle": {
         "fontSizePx": 22,
@@ -31,8 +32,8 @@
       "id": "main-btn",
       "positioning": "group",
       "type": "image",
-      "order": 3,
-      "gapPx": 16,
+      "order": 1,
+      "gapPx": 20,
       "widthPx": 214,
       "widthMode": "fixed",
       "assetKey": "game01/assets/main/main-ui/main-btn.png"
@@ -51,9 +52,9 @@
       "offsetY": 15
     }
   ],
-  "groupVAlign": "center",
+  "groupVAlign": "top",
   "padding": {
-    "top": 80,
+    "top": 530,
     "right": 24,
     "bottom": 80,
     "left": 24

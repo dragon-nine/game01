@@ -2,6 +2,7 @@ package com.dragonnine.game01;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.WebView;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -27,10 +28,13 @@ public class MainActivity extends BridgeActivity {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         controller.setAppearanceLightStatusBars(false);
 
-        // 상태바 높이를 CSS 변수로 주입 (페이지 로드 후)
-        int statusBarHeight = getStatusBarHeight();
+        // 상태바 높이를 CSS 변수로 주입 (물리px → CSS px 변환)
+        int statusBarHeightPx = getStatusBarHeight();
+        float density = getResources().getDisplayMetrics().density;
+        int statusBarHeightCss = Math.round(statusBarHeightPx / density);
+        Log.d("MainAct", "statusBarHeight: " + statusBarHeightPx + "px (physical), " + statusBarHeightCss + "px (css), density=" + density);
         WebView webView = bridge.getWebView();
-        String js = "document.documentElement.style.setProperty('--sat', '" + statusBarHeight + "px')";
+        String js = "document.documentElement.style.setProperty('--sat', '" + statusBarHeightCss + "px')";
 
         // 1초 후 주입 (페이지 로드 대기) + 3초 후 재주입 (SPA 전환 대비)
         webView.postDelayed(() -> webView.evaluateJavascript(js, null), 1000);

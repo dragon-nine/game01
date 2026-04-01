@@ -68,12 +68,15 @@ export function panViewTo(deps: MovementDeps, newViewLeft: number) {
 export function scrollToCurrentRow(deps: MovementDeps) {
   const { height } = deps.scene.scale;
   const row = deps.road.rows[deps.getCurrentRowIdx()];
+  if (!row) return;
   const PLAYER_Y_RATIO = 3 / 4;
   const screenY = height * PLAYER_Y_RATIO;
   const targetContainerY = -(row.y - screenY);
 
   const scrollDelta = targetContainerY - deps.road.getContainer().y;
 
+  // 이전 스크롤 tween 취소 후 새로 시작
+  deps.scene.tweens.killTweensOf(deps.road.getContainer());
   deps.scene.tweens.add({
     targets: deps.road.getContainer(),
     y: targetContainerY,
@@ -108,6 +111,7 @@ export function emitGuideHint(deps: MovementDeps) {
 /* ── Movement ── */
 
 export function switchLane(deps: MovementDeps) {
+  if (deps.getIsFalling()) return;
   const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
   const canSwitch = !deps.getJustSwitched() && currentRow?.isTurn;
 
@@ -143,6 +147,7 @@ export function switchLane(deps: MovementDeps) {
 }
 
 export function moveForward(deps: MovementDeps) {
+  if (deps.getIsFalling()) return;
   const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
   if (currentRow.isTurn && deps.player.currentLane !== currentRow.type) {
     deps.onForwardCrash();

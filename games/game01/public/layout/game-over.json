@@ -67,7 +67,7 @@
       "label": "광고보고 부활",
       "buttonStyle": {
         "styleType": "outline",
-        "scaleKey": "md",
+        "scaleKey": "sm",
         "bgColor": "#24282c",
         "bgGradient": "Crimson → Maroon"
       }
@@ -86,7 +86,7 @@
       "buttonStyle": {
         "styleType": "outline",
         "bgColor": "#24282c",
-        "scaleKey": "md"
+        "scaleKey": "sm"
       }
     },
     {
@@ -141,9 +141,9 @@
   "groupVAlign": "center",
   "padding": {
     "top": 80,
-    "right": 24,
+    "right": 40,
     "bottom": 80,
-    "left": 24
+    "left": 40
   },
   "bgType": "gradient",
   "bgColor": "#000000",

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
 import { usePress } from '../hooks/usePress';
+import { StartButton } from '../components/StartButton';
 import { DESIGN_W } from '../../game/layout-types';
 import styles from './overlay.module.css';
 
@@ -181,45 +182,8 @@ export function MainScreen() {
           최고기록 {bestScore}
         </div>
 
-        {/* 시작 버튼 (텍스트 겹침) */}
-        <div
-          className={styles.fadeInThenPulse}
-          style={{ width: 214 * scale, position: 'relative' }}
-        >
-          <div
-            onClick={handleStart}
-            {...handlers('main-btn')}
-            style={{
-              cursor: 'pointer',
-              position: 'relative',
-              ...pressStyle('main-btn'),
-            }}
-          >
-            <img
-              src={`${BASE}main-screen/main-btn.png`}
-              alt="시작"
-              draggable={false}
-              style={{ width: '100%', display: 'block', objectFit: 'contain' }}
-            />
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              paddingBottom: 14 * scale,
-              justifyContent: 'center',
-              fontFamily: 'GMarketSans, sans-serif',
-              fontWeight: 900,
-              fontSize: 28 * scale,
-              color: '#fff',
-              WebkitTextStroke: `${5 * scale}px #000`,
-              paintOrder: 'stroke fill',
-              pointerEvents: 'none',
-            }}>
-              시작하기
-            </div>
-          </div>
-        </div>
+        {/* 시작 버튼 */}
+        <StartButton label="시작하기" scale={scale} onClick={handleStart} />
       </div>
 
       {/* 디버그 모달 */}

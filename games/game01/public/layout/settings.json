@@ -12,13 +12,12 @@
       "positioning": "group",
       "order": 0,
       "gapPx": 0,
-      "heightPx": 480,
       "label": "모달",
       "innerPadding": {
-        "top": 55,
-        "right": 20,
-        "bottom": 40,
-        "left": 20
+        "top": 40,
+        "right": 24,
+        "bottom": 28,
+        "left": 24
       }
     },
     {
@@ -33,7 +32,7 @@
       "gapPx": 4,
       "label": "설정",
       "textStyle": {
-        "fontSizePx": 32,
+        "fontSizePx": 26,
         "color": "#ffffff",
         "scaleKey": "lg",
         "strokeWidth": 0
@@ -50,12 +49,11 @@
       "positioning": "group",
       "order": 2,
       "gapPx": 4,
-      "heightPx": 300,
       "label": "카드",
       "innerPadding": {
-        "top": 40,
+        "top": 24,
         "right": 20,
-        "bottom": 40,
+        "bottom": 24,
         "left": 20
       },
       "parentId": "el-mn71q09r-yffj",
@@ -88,11 +86,11 @@
       "positioning": "group",
       "order": 3,
       "gapPx": 4,
-      "label": "음악 OFF",
+      "label": "음악",
       "textStyle": {
-        "fontSizePx": 28,
-        "color": "#ffffff",
-        "scaleKey": "md",
+        "fontSizePx": 18,
+        "color": "#dddddd",
+        "scaleKey": "sm",
         "strokeWidth": 0
       },
       "parentId": "el-mn71q5k2-lfjp"
@@ -121,11 +119,11 @@
       "positioning": "group",
       "order": 4,
       "gapPx": 4,
-      "label": "효과음 OFF",
+      "label": "효과음",
       "textStyle": {
-        "fontSizePx": 28,
-        "color": "#ffffff",
-        "scaleKey": "md",
+        "fontSizePx": 18,
+        "color": "#dddddd",
+        "scaleKey": "sm",
         "strokeWidth": 0
       },
       "parentId": "el-mn71q5k2-lfjp"
