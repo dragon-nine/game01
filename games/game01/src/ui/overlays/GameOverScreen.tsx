@@ -3,6 +3,7 @@ import { gameBus, type GameOverData } from '../../game/event-bus';
 import { useLayout } from '../hooks/useLayout';
 import { usePress } from '../hooks/usePress';
 import { openLeaderboard } from '../../game/services/leaderboard';
+import { isAdRemoved } from '../../game/services/billing';
 import { logClick } from '../../game/services/analytics';
 import { getRandomQuote } from '../../game/game-over-quotes';
 import { LayoutText } from '../components/LayoutText';
@@ -34,6 +35,7 @@ export function GameOverScreen({ data }: Props) {
     'bestText': `최고기록 ${bestScore}`,
     'scoreText': `${score}`,
     'quoteText': quote,
+    'go-btn-revive': isAdRemoved() ? '부활하기' : '광고보고 부활',
   }), [score, bestScore, quote]);
 
   const clickHandlers: Record<string, () => void> = useMemo(() => ({
