@@ -93,7 +93,17 @@ public class PlayGamesPlugin extends Plugin {
             if (!isAuth) {
                 signInClient.signIn().addOnCompleteListener(signInTask -> {
                     if (signInTask.isSuccessful()) {
-                        openLeaderboardUI(activity, leaderboardId, call);
+                        // signIn 성공 후 실제 인증 상태 재확인
+                        signInClient.isAuthenticated().addOnCompleteListener(reAuthTask -> {
+                            boolean reAuth = reAuthTask.isSuccessful() && reAuthTask.getResult().isAuthenticated();
+                            Log.d(TAG, "Re-auth after signIn: " + reAuth);
+                            if (reAuth) {
+                                openLeaderboardUI(activity, leaderboardId, call);
+                            } else {
+                                Log.e(TAG, "Still not authenticated after signIn");
+                                call.reject("Sign-in completed but not authenticated. Check SHA-1 and Play Games config.");
+                            }
+                        });
                     } else {
                         Log.e(TAG, "signIn before leaderboard failed", signInTask.getException());
                         call.reject("Sign-in required to view leaderboard");
