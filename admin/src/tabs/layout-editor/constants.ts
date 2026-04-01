@@ -7,8 +7,8 @@ export const PHONE_PREVIEW_W = 360
 export const PHONE_PREVIEW_H = 740
 
 export const R2_LAYOUT_PREFIX = 'game01/layout/'
-export const R2_LAYOUT_INDEX_KEY = 'layout-editor/game01-index'
-export const R2_ASSET_PREFIX = 'game01/'
+export const R2_LAYOUT_INDEX_KEY = 'game01/layout/index'
+export const R2_ASSET_PREFIX = 'game01/assets/'
 
 export const DEFAULT_PADDING = { top: 60, right: 24, bottom: 40, left: 24 }
 export const MIN_ELEMENT_SIZE = 20

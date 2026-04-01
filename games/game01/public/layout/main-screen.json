@@ -10,7 +10,7 @@
       "gapPx": 0,
       "widthPx": 342,
       "widthMode": "fixed",
-      "assetKey": "game01/main-screen/main-text.png"
+      "assetKey": "game01/assets/main/main-screen/main-text.png"
     },
     {
       "id": "main-char",
@@ -20,7 +20,7 @@
       "gapPx": 16,
       "widthPx": 175,
       "widthMode": "fixed",
-      "assetKey": "game01/main-screen/main-char.png"
+      "assetKey": "game01/assets/main/main-screen/main-char.png"
     },
     {
       "id": "bestScore",
@@ -45,7 +45,7 @@
       "gapPx": 16,
       "widthPx": 214,
       "widthMode": "fixed",
-      "assetKey": "game01/main-ui/main-btn.png"
+      "assetKey": "game01/assets/main/main-ui/main-btn.png"
     },
     {
       "id": "btn-settings",
@@ -55,7 +55,7 @@
       "visible": true,
       "locked": false,
       "positioning": "anchor",
-      "assetKey": "game01/main-ui/btn-settings.png",
+      "assetKey": "game01/assets/main/main-ui/btn-settings.png",
       "anchor": "top-right",
       "offsetX": 15,
       "offsetY": 15
@@ -71,5 +71,5 @@
   "bgType": "image",
   "bgColor": "#000000",
   "bgGradient": "Wine → Black",
-  "bgAssetKey": "game01/main-screen/main-bg.png"
+  "bgAssetKey": "game01/assets/main/main-screen/main-bg.png"
 }

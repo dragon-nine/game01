@@ -135,7 +135,7 @@
       "positioning": "group",
       "order": 3,
       "gapPx": 22,
-      "assetKey": "game01/etc-image/gameover-rabbit.png"
+      "assetKey": "game01/assets/etc/etc-image/gameover-rabbit.png"
     }
   ],
   "groupVAlign": "center",

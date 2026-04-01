@@ -49,6 +49,6 @@ export const TABS: TabDef[] = [
 export function buildCategories(gameId: string, tab: TabDef): CategoryDef[] {
   return tab.categories.map((c) => ({
     ...c,
-    prefix: c.key.startsWith('launch/') ? `${c.key.replace('launch/', `launch/${gameId}/`)}/` : `${gameId}/${c.key}/`,
+    prefix: `${gameId}/assets/${tab.id}/${c.key}/`,
   }))
 }

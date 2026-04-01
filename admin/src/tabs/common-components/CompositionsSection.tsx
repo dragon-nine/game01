@@ -34,7 +34,7 @@ export function CompositionsSection({ spec, update }: { spec: DesignSpec; update
             <MainTitle line1={line1} line2={line2} line1Size={t1s.fontSize} line2Size={t2s.fontSize} gradientFrom={t.gradientFrom} gradientTo={t.gradientTo} strokeWidth={t1s.stroke} line2Color={t.line2Color} />
           </Preview>
         }
-        original="/game01/main-screen/main-text.png"
+        original="/game01/assets/main/main-screen/main-text.png"
         originalBg="linear-gradient(to bottom, #2a0c10, #000)"
         controls={
           <>

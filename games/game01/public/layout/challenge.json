@@ -128,7 +128,7 @@
       "positioning": "group",
       "order": 3,
       "gapPx": 20,
-      "assetKey": "game01/etc-image/challenge-rabbit.png",
+      "assetKey": "game01/assets/etc/etc-image/challenge-rabbit.png",
       "parentId": "el-mn77cfh6-qc4q"
     }
   ],

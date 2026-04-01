@@ -13,7 +13,7 @@ export function TextStyleSection({ element: el, onUpdate: update }: TextStyleSec
 
   const ts = el.textStyle || {}
   const scaleKey = ts.scaleKey || 'sm'
-  const scaleVal = typeScale[scaleKey]
+  const scaleVal = typeScale[scaleKey as TypeScaleKey]
   const hasStroke = (ts.strokeWidth ?? scaleVal.stroke) > 0
 
   const currentColorValue = ts.gradientColors

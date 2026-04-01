@@ -34,7 +34,7 @@ let cachedQuotes: Quote[] | null = null
 /** 앱 시작 시 R2에서 멘트를 미리 로드 */
 export async function loadQuotes(): Promise<void> {
   try {
-    const res = await fetch('/api/json-store?key=game01/content/quotes.json')
+    const res = await fetch('/api/json-store?key=game01/assets/etc/content/quotes.json')
     if (res.ok) {
       const { data } = await res.json()
       if (Array.isArray(data) && data.length > 0) {

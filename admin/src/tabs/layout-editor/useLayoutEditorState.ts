@@ -64,8 +64,6 @@ export function useLayoutEditorState(imageSizes: ImageSizeMap) {
   // Add element
   const addElement = useCallback((type: string, positioning: 'group' | 'anchor' = 'group') => {
     const id = makeId()
-    let newEl: LayoutElement | null = null
-
     setState((prev) => {
       const maxOrder = prev.elements
         .filter((e): e is GroupElement => e.positioning === 'group')
@@ -115,7 +113,6 @@ export function useLayoutEditorState(imageSizes: ImageSizeMap) {
         el.label = '원형 버튼'
       }
 
-      newEl = el
       return {
         ...prev,
         elements: [...prev.elements, el],

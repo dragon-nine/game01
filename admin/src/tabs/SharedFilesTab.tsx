@@ -4,7 +4,7 @@ import type { BlobItem } from '../types'
 import { listFolder, uploadBlob, deleteBlob } from '../api'
 import { useBatchUpload } from '../hooks/useUpload'
 import {
-  getFilename, getFolderName, getBreadcrumbs, groupByCategory, downloadFile,
+  getFilename, getBreadcrumbs, groupByCategory, downloadFile,
 } from './shared-files/utils'
 import { FolderSection } from './shared-files/FolderSection'
 import { FileSectionGroup } from './shared-files/FileSectionGroup'

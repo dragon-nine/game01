@@ -23,7 +23,7 @@ export function useImageSizes() {
             new Promise<void>((resolve) => {
               const assetUrl = el.assetKey
                 ? `${R2_PUBLIC}/${el.assetKey}`
-                : `${R2_PUBLIC}/${gameId}/${screenKey}/${el.id}.png`
+                : `${R2_PUBLIC}/${gameId}/assets/${screenKey}/${el.id}.png`
               const img = new Image()
               img.onload = () => {
                 sizes[el.id] = { w: img.naturalWidth, h: img.naturalHeight }

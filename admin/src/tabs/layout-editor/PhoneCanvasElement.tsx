@@ -133,8 +133,8 @@ export default function PhoneCanvasElement({ el, pos, scale, selected, assetUrl,
     if (el.type === 'button') {
       const bs = el.buttonStyle
       const scaleKey = bs?.scaleKey || 'lg'
-      const ts = typeScale[scaleKey]
-      const bsd = buttonStyleDefaults[bs?.styleType || 'outline']
+      const ts = typeScale[scaleKey as keyof typeof typeScale]
+      const bsd = buttonStyleDefaults[bs?.styleType as keyof typeof buttonStyleDefaults || 'outline']
       const bgGrad = bs?.bgGradient ? gradients[bs.bgGradient as GradientKey] : null
       const bgStyle = bgGrad
         ? `linear-gradient(${bgGrad.direction}, ${bgGrad.from}, ${bgGrad.to})`
