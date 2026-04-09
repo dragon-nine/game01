@@ -76,7 +76,7 @@ export function SettingsOverlay() {
           {/* X 버튼 */}
           <div
             onClick={handleClose}
-            {...handlers('settings-close')}
+            {...handlers('settings-close', handleClose)}
             style={{
               position: 'absolute',
               top: 12 * scale, right: 12 * scale,

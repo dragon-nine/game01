@@ -19,7 +19,7 @@ export function StartButton({ label, scale, onClick }: Props) {
     >
       <div
         onClick={onClick}
-        {...handlers('start-btn')}
+        {...handlers('start-btn', onClick)}
         style={{
           cursor: 'pointer',
           position: 'relative',

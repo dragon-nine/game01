@@ -130,7 +130,7 @@ export function GameOverScreen({ data }: Props) {
                   ...pressStyle(el.id),
                 }}
                 onClick={onClick}
-                {...handlers(el.id)}
+                {...handlers(el.id, onClick)}
               >
                 {content}
               </div>

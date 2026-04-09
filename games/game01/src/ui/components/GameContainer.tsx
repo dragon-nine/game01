@@ -28,14 +28,25 @@ export function GameContainer() {
 
     loadQuotes(); // R2에서 게임오버 멘트 미리 로드
 
-    // Google(Capacitor) 환경에서 AdMob + GPGS + 구매복원 초기화
+    // 플랫폼별 초기화
     if (isGoogle()) {
+      // Google: AdMob + GPGS + 구매복원
       import('../../game/services/admob-provider').then(({ AdMobProvider }) => {
         adService.setProvider(new AdMobProvider());
       }).catch((e) => console.warn('[AdMob] 초기화 실패:', e));
       import('../../game/services/leaderboard').then(({ initGPGS }) => {
         initGPGS();
       }).catch((e) => console.warn('[GPGS] 초기화 실패:', e));
+      import('../../game/services/billing').then(({ restoreAdRemove }) => {
+        restoreAdRemove();
+      }).catch((e) => console.warn('[Billing] 복원 실패:', e));
+    } else {
+      // 토스: 광고 프로바이더 + 구매복원
+      import('../../game/services/toss-ad-provider').then(async ({ TossAdProvider }) => {
+        const provider = new TossAdProvider();
+        adService.setProvider(provider);
+        await provider.preload(); // 광고 로드 완료까지 대기
+      }).catch((e) => console.warn('[TossAd] 초기화 실패:', e));
       import('../../game/services/billing').then(({ restoreAdRemove }) => {
         restoreAdRemove();
       }).catch((e) => console.warn('[Billing] 복원 실패:', e));
@@ -78,7 +89,7 @@ export function GameContainer() {
       {screen === 'settings' && <SettingsOverlay />}
       {(screen === 'playing' || screen === 'paused') && <GameplayHUD />}
       {screen === 'paused' && <PauseOverlay />}
-      {screen === 'game-over' && gameOverData && <GameOverScreen data={gameOverData} />}
+      {(screen === 'game-over' || screen === 'revive-ad') && gameOverData && <GameOverScreen data={gameOverData} />}
       {challengeScore !== null && (
         <ChallengeOverlay score={challengeScore} onClose={() => setChallengeScore(null)} />
       )}

@@ -77,7 +77,7 @@ export function ChallengeOverlay({ score, onClose }: Props) {
           {/* X 버튼 */}
           <div
             onClick={handleClose}
-            {...handlers('challenge-close')}
+            {...handlers('challenge-close', handleClose)}
             style={{
               position: 'absolute',
               top: 12 * scale, right: 12 * scale,
@@ -136,7 +136,7 @@ export function ChallengeOverlay({ score, onClose }: Props) {
           {/* 다른 멘트로 바꾸기 */}
           <div
             onClick={handleRefresh}
-            {...handlers('challenge-refresh')}
+            {...handlers('challenge-refresh', handleRefresh)}
             style={{
               textAlign: 'center',
               marginBottom: 20 * scale,
@@ -157,7 +157,7 @@ export function ChallengeOverlay({ score, onClose }: Props) {
           {/* 카카오톡 보내기 버튼 */}
           <div
             onClick={handleCTA}
-            {...handlers('challenge-cta')}
+            {...handlers('challenge-cta', handleCTA)}
             style={{
               background: '#000',
               borderRadius: 12 * scale,

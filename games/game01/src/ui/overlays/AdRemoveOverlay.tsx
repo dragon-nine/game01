@@ -73,7 +73,7 @@ export function AdRemoveOverlay({ onClose }: Props) {
           {/* X 버튼 */}
           <div
             onClick={handleClose}
-            {...handlers('modal-close')}
+            {...handlers('modal-close', handleClose)}
             style={{
               position: 'absolute',
               top: 12 * scale, right: 12 * scale,
@@ -155,7 +155,7 @@ export function AdRemoveOverlay({ onClose }: Props) {
           {/* 구매하기 버튼 */}
           <div
             onClick={handlePurchase}
-            {...handlers('purchase-btn')}
+            {...handlers('purchase-btn', handlePurchase)}
             style={{
               background: '#000',
               borderRadius: 12 * scale,

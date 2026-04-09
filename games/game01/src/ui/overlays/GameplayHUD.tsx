@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
+import { isToss } from '../../game/platform';
 import { useLayout } from '../hooks/useLayout';
 import styles from './overlay.module.css';
 
@@ -16,15 +17,23 @@ const IMAGE_MAP: Record<string, string> = {
 export function GameplayHUD() {
   const { positions, elements, scale, ready } = useLayout('gameplay', IMAGE_MAP);
   const [score, setScore] = useState(0);
-  const [timerPct, setTimerPct] = useState(1);
   const [pressedBtn, setPressedBtn] = useState<string | null>(null);
+  const gaugeFillRef = useRef<HTMLDivElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
   const [showIntro, setShowIntro] = useState(!tutorialDone);
   const [guideHint, setGuideHint] = useState<'forward' | 'switch' | null>(tutorialDone ? null : 'forward');
 
   useEffect(() => {
     const unsub1 = gameBus.on('score-update', setScore);
-    const unsub2 = gameBus.on('timer-update', setTimerPct);
+    // 타이머는 React state 대신 DOM 직접 조작 → 리렌더 0번
+    const unsub2 = gameBus.on('timer-update', (pct) => {
+      const el = gaugeFillRef.current;
+      if (!el) return;
+      const slantPct = el.dataset['slantPct'] ? parseFloat(el.dataset['slantPct']) : 0;
+      const fillPct = pct * 100;
+      const bottomPct = Math.max(0, fillPct - slantPct);
+      el.style.clipPath = `polygon(0% 0%, ${fillPct}% 0%, ${bottomPct}% 100%, 0% 100%)`;
+    });
     const unsub3 = gameBus.on('guide-hint', (hint) => {
       setGuideHint(hint);
       // 첫 전진 시 인트로 메시지 제거
@@ -49,6 +58,9 @@ export function GameplayHUD() {
     setPressedBtn(id);
     setTimeout(() => setPressedBtn(null), 80);
   }, []);
+
+  const toss = isToss();
+
 
   if (!ready) return null;
 
@@ -98,16 +110,17 @@ export function GameplayHUD() {
             {(() => {
               const w = gaugePos.displayWidth;
               const h = gaugePos.displayHeight;
-              const slant = h * 0.424; // 대각선 기울기 (113도)
-              const slantPct = (slant / w) * 100;
-              const fillPct = timerPct * 100;
-              const bottomPct = Math.max(0, fillPct - slantPct);
+              const slantPct = ((h * 0.424) / w) * 100;
               return (
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  clipPath: `polygon(0% 0%, ${fillPct}% 0%, ${bottomPct}% 100%, 0% 100%)`,
-                }}>
+                <div
+                  ref={gaugeFillRef}
+                  data-slant-pct={slantPct}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    clipPath: `polygon(0% 0%, 100% 0%, ${100 - slantPct}% 100%, 0% 100%)`,
+                  }}
+                >
                   <img
                     src={`${BASE}ui/gauge-full.png`}
                     alt=""
@@ -123,13 +136,13 @@ export function GameplayHUD() {
 
       {/* 일시정지 버튼 */}
       <div
-        style={{ ...boxStyle('btn-pause'), pointerEvents: 'auto', cursor: 'pointer' }}
-        onClick={handlePause}
+        style={{ ...boxStyle('btn-pause'), pointerEvents: 'auto', cursor: 'pointer', touchAction: 'manipulation' }}
+        onPointerDown={handlePause}
       >
         <img
           src={`${BASE}ui/btn-pause.png`}
           alt="일시정지"
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
           draggable={false}
         />
       </div>
@@ -160,13 +173,16 @@ export function GameplayHUD() {
           cursor: 'pointer',
           transform: pressedBtn === 'btn-switch' ? 'scale(0.85)' : undefined,
           transition: 'transform 0.08s ease-out',
+          touchAction: 'manipulation',
         }}
-        onPointerDown={() => { handleBtnDown('btn-switch'); handleSwitch(); }}
+        {...(toss
+          ? { onTouchStart: () => { handleBtnDown('btn-switch'); handleSwitch(); } }
+          : { onPointerDown: () => { handleBtnDown('btn-switch'); handleSwitch(); } })}
       >
         <img
           src={`${BASE}ui/btn-switch.png`}
           alt="전환"
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
           draggable={false}
         />
       </div>
@@ -179,13 +195,16 @@ export function GameplayHUD() {
           cursor: 'pointer',
           transform: pressedBtn === 'btn-forward' ? 'scale(0.85)' : undefined,
           transition: 'transform 0.08s ease-out',
+          touchAction: 'manipulation',
         }}
-        onPointerDown={() => { handleBtnDown('btn-forward'); handleForward(); }}
+        {...(toss
+          ? { onTouchStart: () => { handleBtnDown('btn-forward'); handleForward(); } }
+          : { onPointerDown: () => { handleBtnDown('btn-forward'); handleForward(); } })}
       >
         <img
           src={`${BASE}ui/btn-forward.png`}
           alt="전진"
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
           draggable={false}
         />
       </div>

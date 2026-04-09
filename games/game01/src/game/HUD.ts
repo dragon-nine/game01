@@ -20,6 +20,7 @@ export class HUD {
   private onTimeUp: () => void;
   private warningPlayed = false;
   private currentScore = 0;
+  private lastEmittedPct = -1;
 
   constructor(scene: Phaser.Scene, onTimeUp: () => void) {
     this.scene = scene;
@@ -102,7 +103,11 @@ export class HUD {
 
   private emitTimer() {
     const pct = Math.max(0, this.timeLeft / MAX_TIME);
-    gameBus.emit('timer-update', pct);
+    // 1% 단위로만 emit → 5초 동안 100번 (초당 ~20번)
+    const rounded = Math.round(pct * 100) / 100;
+    if (rounded === this.lastEmittedPct) return;
+    this.lastEmittedPct = rounded;
+    gameBus.emit('timer-update', rounded);
   }
 
   togglePause() {

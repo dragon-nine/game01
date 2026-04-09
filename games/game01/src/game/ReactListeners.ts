@@ -3,6 +3,7 @@ import { adService } from './services/ad-service';
 import { gameBus } from './event-bus';
 import { storage } from './services/storage';
 import { HUD } from './HUD';
+import { isToss, isTossNative } from './platform';
 import { revive as doRevive, type LifecycleDeps } from './GameLifecycle';
 
 export interface ReactListenerDeps {
@@ -79,5 +80,13 @@ export function setupReactListeners(deps: ReactListenerDeps) {
 }
 
 function vibrate(pattern: number | number[]) {
+  // 토스 네이티브: 자체 햅틱 SDK 사용 (iOS/Android 모두 지원)
+  if (isToss() && isTossNative()) {
+    import('@apps-in-toss/web-framework').then(({ generateHapticFeedback }) => {
+      generateHapticFeedback({ type: 'tap' });
+    }).catch(() => { /* 미지원 환경 무시 */ });
+    return;
+  }
+  // 그 외(구글/웹): 표준 Vibration API
   try { navigator.vibrate?.(pattern); } catch { /* 미지원 환경 무시 */ }
 }

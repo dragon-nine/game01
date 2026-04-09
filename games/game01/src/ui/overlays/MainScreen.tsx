@@ -63,7 +63,7 @@ export function MainScreen() {
         {/* 광고제거 */}
         <div
           onClick={() => gameBus.emit('show-ad-remove', undefined)}
-          {...handlers('icon-ad-remove')}
+          {...handlers('icon-ad-remove', () => gameBus.emit('show-ad-remove', undefined))}
           style={{
             width: 42 * scale, height: 42 * scale,
             borderRadius: 999,
@@ -87,7 +87,7 @@ export function MainScreen() {
         <div style={{ display: 'flex', gap: 6 * scale }}>
           <div
             onClick={handleSettings}
-            {...handlers('btn-settings')}
+            {...handlers('btn-settings', handleSettings)}
             style={{
               width: 42 * scale, height: 42 * scale,
               borderRadius: 999,

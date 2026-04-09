@@ -1,18 +1,18 @@
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  appName: 'workers-nightmare',
+  appName: 'worker-nightmare',
   brand: {
-    displayName: '',
+    displayName: '직장인 잔혹사 : 퇴근길',
     primaryColor: '#000000',
-    icon: '',
+    icon: './icon.png',
   },
   web: {
     host: 'localhost',
     port: 5173,
     commands: {
       dev: 'vite',
-      build: 'tsc -b && vite build',
+      build: 'tsc -b && vite build --outDir dist --base /',
     },
   },
   navigationBar: {

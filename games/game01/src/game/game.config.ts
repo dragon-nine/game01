@@ -18,6 +18,12 @@ export const gameConfig = {
   /** AdMob 보상형 광고 단위 ID */
   admobRewardedAdUnitId: 'ca-app-pub-3788530115276232/7954231034',
 
+  /** 토스 리워드 광고 그룹 ID (콘솔에서 발급) */
+  tossAdGroupId: 'ait.v2.live.6f19e5acfea94336',
+
+  /** 토스 인앱결제 상품 SKU (콘솔에서 등록) */
+  tossIapSku: 'ait.0000022726.795abd69.150c18aa70.5694726938',
+
   /** 에셋 매니페스트 */
   assets: {
     images: [

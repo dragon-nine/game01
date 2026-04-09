@@ -81,7 +81,7 @@ export function PauseOverlay() {
           {/* X 버튼 */}
           <div
             onClick={handleResume}
-            {...handlers('pause-close')}
+            {...handlers('pause-close', handleResume)}
             style={{
               position: 'absolute',
               top: 12 * scale, right: 12 * scale,
@@ -154,7 +154,7 @@ export function PauseOverlay() {
           {/* 홈으로 가기 버튼 */}
           <div
             onClick={handleGoHome}
-            {...handlers('pause-home')}
+            {...handlers('pause-home', handleGoHome)}
             style={{
               background: '#000',
               borderRadius: 12 * scale,

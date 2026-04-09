@@ -11,7 +11,6 @@ import { adService } from '../services/ad-service';
 import { gameBus } from '../event-bus';
 import { storage } from '../services/storage';
 import { BackgroundManager } from '../BackgroundManager';
-import { showHouseAd } from '../HouseAd';
 import {
   switchLane as doSwitchLane,
   moveForward as doMoveForward,
@@ -99,7 +98,6 @@ export class CommuteScene extends Phaser.Scene {
 
     gameBus.emit('screen-change', 'playing');
 
-    adService.setHouseAdRenderer((onComplete) => showHouseAd(this, onComplete));
     adService.preload();
 
     setupReactListeners({
