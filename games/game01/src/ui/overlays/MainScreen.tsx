@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { gameBus } from '../../game/event-bus';
+import { logScreen } from '../../game/services/analytics';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { BottomTabBar, type HomeTab as TabKey } from './home/BottomTabBar';
 import { HomeTab } from './home/HomeTab';
@@ -10,6 +11,11 @@ import styles from './overlay.module.css';
 export function MainScreen() {
   const scale = useResponsiveScale();
   const [tab, setTab] = useState<TabKey>('home');
+
+  // 홈 탭 진입 시 현재 탭 화면 추적 (GameContainer의 screen_main 이후에 로깅)
+  useEffect(() => {
+    logScreen(`screen_main_${tab}`);
+  }, [tab]);
 
   const handleTabChange = (next: TabKey) => {
     if (next === tab) return;

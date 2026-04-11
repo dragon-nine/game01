@@ -5,6 +5,9 @@ import { Text } from '../../components/Text';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
+import { isAdRemoved } from '../../../game/services/billing';
+
+const AD_REMOVE_KEY = 'ad_removed';
 
 interface Props {
   onClose: () => void;
@@ -16,6 +19,7 @@ const GEM_GRANT = 10000;
 export function DebugModal({ onClose }: Props) {
   const scale = useResponsiveScale();
   const [godMode, setGodMode] = useState(() => storage.getBool('godMode'));
+  const [adRemoved, setAdRemoved] = useState(() => isAdRemoved());
   const [coins, setCoins] = useState(() => storage.getNum('coins'));
   const [gems, setGems] = useState(() => storage.getNum('gems'));
 
@@ -30,6 +34,18 @@ export function DebugModal({ onClose }: Props) {
     const next = storage.getBool('godMode');
     setGodMode(next);
     gameBus.emit('toast', next ? '무적 ON' : '무적 OFF');
+  };
+
+  const handleToggleAdRemoved = () => {
+    gameBus.emit('play-sfx', 'sfx-click');
+    const next = !adRemoved;
+    if (next) {
+      localStorage.setItem(AD_REMOVE_KEY, 'true');
+    } else {
+      localStorage.removeItem(AD_REMOVE_KEY);
+    }
+    setAdRemoved(next);
+    gameBus.emit('toast', next ? '부활 광고 제거 ON (구매 상태)' : '부활 광고 제거 OFF');
   };
 
   const grant = (key: 'coins' | 'gems', amount: number) => {
@@ -55,48 +71,22 @@ export function DebugModal({ onClose }: Props) {
         DEV 빌드 전용
       </Text>
 
-      {/* 무적 토글 */}
+      {/* 치트 토글 — 무적 모드 + 부활 광고 제거 */}
       <Section title="치트" scale={scale}>
-        <TapButton
-          onTap={handleToggleGod}
-          pressScale={0.96}
-          style={{
-            width: '100%',
-            padding: `${12 * scale}px`,
-            background: godMode
-              ? 'linear-gradient(180deg, #3fdcb0, #1d9e75)'
-              : 'rgba(255,255,255,0.06)',
-            border: `${2 * scale}px solid ${godMode ? '#0a3a28' : 'rgba(255,255,255,0.12)'}`,
-            borderRadius: 10 * scale,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10 * scale,
-          }}
-        >
-          <span
-            style={{
-              fontFamily: 'GMarketSans, sans-serif',
-              fontWeight: 900,
-              fontSize: 14 * scale,
-              color: godMode ? '#0a1f15' : '#fff',
-              letterSpacing: 0.3,
-            }}
-          >
-            무적 모드
-          </span>
-          <span
-            style={{
-              fontFamily: 'GMarketSans, sans-serif',
-              fontWeight: 900,
-              fontSize: 12 * scale,
-              color: godMode ? '#0a1f15' : 'rgba(255,255,255,0.55)',
-              letterSpacing: 0.3,
-            }}
-          >
-            {godMode ? '✓ ON' : 'OFF'}
-          </span>
-        </TapButton>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 * scale }}>
+          <ToggleButton
+            label="무적 모드"
+            on={godMode}
+            scale={scale}
+            onTap={handleToggleGod}
+          />
+          <ToggleButton
+            label="부활 광고 제거 (구매 상태)"
+            on={adRemoved}
+            scale={scale}
+            onTap={handleToggleAdRemoved}
+          />
+        </div>
       </Section>
 
       {/* 코인 */}
@@ -195,6 +185,61 @@ function Section({ title, scale, children }: { title: string; scale: number; chi
 
 function ButtonRow({ scale, children }: { scale: number; children: React.ReactNode }) {
   return <div style={{ display: 'flex', gap: 6 * scale }}>{children}</div>;
+}
+
+function ToggleButton({
+  label,
+  on,
+  scale,
+  onTap,
+}: {
+  label: string;
+  on: boolean;
+  scale: number;
+  onTap: () => void;
+}) {
+  return (
+    <TapButton
+      onTap={onTap}
+      pressScale={0.96}
+      style={{
+        width: '100%',
+        padding: `${12 * scale}px`,
+        background: on
+          ? 'linear-gradient(180deg, #3fdcb0, #1d9e75)'
+          : 'rgba(255,255,255,0.06)',
+        border: `${2 * scale}px solid ${on ? '#0a3a28' : 'rgba(255,255,255,0.12)'}`,
+        borderRadius: 10 * scale,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10 * scale,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: 'GMarketSans, sans-serif',
+          fontWeight: 900,
+          fontSize: 14 * scale,
+          color: on ? '#0a1f15' : '#fff',
+          letterSpacing: 0.3,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: 'GMarketSans, sans-serif',
+          fontWeight: 900,
+          fontSize: 12 * scale,
+          color: on ? '#0a1f15' : 'rgba(255,255,255,0.55)',
+          letterSpacing: 0.3,
+        }}
+      >
+        {on ? '✓ ON' : 'OFF'}
+      </span>
+    </TapButton>
+  );
 }
 
 function GrantButton({

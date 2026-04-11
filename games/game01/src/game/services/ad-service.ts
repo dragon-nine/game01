@@ -11,7 +11,6 @@
  */
 
 import { logEvent } from './analytics';
-import { isAdRemoved } from './billing';
 
 /** 광고 표시 결과 */
 export type AdResult =
@@ -49,14 +48,11 @@ class AdService {
    * - 광고 미로드 시 최대 5초까지 로드 대기
    * - 진행 중인 광고가 있으면 두 번째 호출은 무시 (연타 방지)
    * - 결과는 onResult 콜백으로 전달
+   *
+   * NOTE: 광고 제거(부활 전용) 구매 여부는 여기서 체크하지 않음.
+   * 부활 흐름에서만 별도로 isAdRemoved() 체크 후 바이패스. (상점 무료 보상 광고는 그대로)
    */
   showRewarded(onResult: (result: AdResult) => void): void {
-    // 광고 제거 구매한 사용자는 즉시 부활
-    if (isAdRemoved()) {
-      onResult({ kind: 'rewarded' });
-      return;
-    }
-
     // 이미 진행 중 — 무시 (연타 방지)
     if (this.currentShow) {
       logEvent('ad_rewarded_dedup', {});

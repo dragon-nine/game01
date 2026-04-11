@@ -4,6 +4,7 @@ import { createGameConfig } from '../../game/config';
 import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
 import { loadQuotes } from '../../game/game-over-quotes';
 import { adService } from '../../game/services/ad-service';
+import { logScreen } from '../../game/services/analytics';
 import { isGoogle, isTossNative } from '../../game/platform';
 import { MainScreen } from '../overlays/MainScreen';
 import { SettingsOverlay } from '../overlays/SettingsOverlay';
@@ -77,6 +78,8 @@ export function GameContainer() {
   useEffect(() => {
     const unsub1 = gameBus.on('screen-change', (s) => {
       setScreen(s);
+      // Toss/Firebase 분석 — 화면 전환 추적 (log_name은 snake_case + 'screen_' 접두)
+      logScreen(`screen_${s.replace(/-/g, '_')}`);
       // 게임오버 화면을 벗어나면 부활 실패 모달도 정리
       if (s !== 'game-over') setReviveFailReason(null);
     });

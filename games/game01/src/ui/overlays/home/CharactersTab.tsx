@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
+import { logEvent } from '../../../game/services/analytics';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
+import { ModalShell } from '../../components/ModalShell';
 import { TapButton } from '../../components/TapButton';
+import { Text } from '../../components/Text';
+import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import styles from '../overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -80,6 +84,7 @@ export function CharactersTab({ scale }: Props) {
   const [selected, setSelected] = useState<string>(() => storage.getSelectedCharacter());
   const [coins, setCoins] = useState<number>(() => storage.getNum('coins'));
   const [gems, setGems] = useState<number>(() => storage.getNum('gems'));
+  const [pendingChar, setPendingChar] = useState<CharItem | null>(null);
 
   const handleAction = (item: CharItem) => {
     gameBus.emit('play-sfx', 'sfx-click');
@@ -98,14 +103,29 @@ export function CharactersTab({ scale }: Props) {
       }
       storage.setSelectedCharacter(item.id);
       setSelected(item.id);
+      logEvent('character_select', { id: item.id });
       gameBus.emit('toast', `${item.name} 선택됨`);
       return;
     }
 
     if (item.price === undefined || !item.currency) return;
+    // 바로 구매하지 않고 확인 모달 띄우기
+    setPendingChar(item);
+  };
+
+  const confirmPurchase = () => {
+    if (!pendingChar) return;
+    const item = pendingChar;
+    gameBus.emit('play-sfx', 'sfx-click');
+
+    if (item.price === undefined || !item.currency) {
+      setPendingChar(null);
+      return;
+    }
     const balance = item.currency === 'coin' ? coins : gems;
     if (balance < item.price) {
       gameBus.emit('toast', `${item.currency === 'coin' ? '코인' : '보석'} 부족`);
+      setPendingChar(null);
       return;
     }
 
@@ -113,7 +133,18 @@ export function CharactersTab({ scale }: Props) {
     storage.addOwnedCharacter(item.id);
     if (item.currency === 'coin') setCoins(newBalance); else setGems(newBalance);
     setOwned(storage.getOwnedCharacters());
+    logEvent('character_purchase_success', {
+      id: item.id,
+      price: item.price,
+      currency: item.currency,
+    });
     gameBus.emit('toast', `${item.name} 구매 완료!`);
+    setPendingChar(null);
+  };
+
+  const cancelPurchase = () => {
+    gameBus.emit('play-sfx', 'sfx-click');
+    setPendingChar(null);
   };
 
   return (
@@ -195,7 +226,228 @@ export function CharactersTab({ scale }: Props) {
           </CardGrid>
         </Section>
       </div>
+
+      {/* 캐릭터 구매 확인 모달 */}
+      {pendingChar && (
+        <CharPurchaseConfirmModal
+          item={pendingChar}
+          currentCoins={coins}
+          currentGems={gems}
+          onConfirm={confirmPurchase}
+          onCancel={cancelPurchase}
+        />
+      )}
     </div>
+  );
+}
+
+/* ── 캐릭터 구매 확인 모달 ── */
+
+function CharPurchaseConfirmModal({
+  item,
+  currentCoins,
+  currentGems,
+  onConfirm,
+  onCancel,
+}: {
+  item: CharItem;
+  currentCoins: number;
+  currentGems: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const scale = useResponsiveScale();
+  if (item.price === undefined || !item.currency) return null;
+
+  // 마침표 + (선택적 따옴표) 뒤에 공백이 있으면 줄바꿈으로 치환
+  // 예: "야근. 눈빛이..." → "야근.\n눈빛이..."
+  //     "\"퇴근해.\" 본인은..." → "\"퇴근해.\"\n본인은..."
+  const formattedDesc = item.desc.replace(/(\.["'"'"']?)\s+/g, '$1\n');
+
+  const isCoin = item.currency === 'coin';
+  const currentBalance = isCoin ? currentCoins : currentGems;
+  const insufficient = currentBalance < item.price;
+  const balanceAfter = Math.max(0, currentBalance - item.price);
+  const Icon = isCoin ? CoinIcon : GemIcon;
+  const label = isCoin ? '코인' : '보석';
+
+  return (
+    <ModalShell onClose={onCancel} maxWidth={320} zIndex={400}>
+      {/* 타이틀 */}
+      <Text size={20 * scale} weight={900} align="center" style={{ marginBottom: 4 * scale }}>
+        캐릭터 구매
+      </Text>
+      <Text
+        size={12 * scale}
+        color="rgba(255,255,255,0.5)"
+        align="center"
+        style={{ marginBottom: 18 * scale }}
+      >
+        이 캐릭터를 구매하시겠어요?
+      </Text>
+
+      {/* 캐릭터 카드 */}
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: `${1 * scale}px solid rgba(255,255,255,0.08)`,
+          borderRadius: 14 * scale,
+          padding: `${14 * scale}px`,
+          marginBottom: 16 * scale,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12 * scale,
+        }}
+      >
+        {/* 캐릭터 이미지 */}
+        <div
+          style={{
+            width: 64 * scale,
+            height: 64 * scale,
+            borderRadius: 14 * scale,
+            background: 'rgba(0,0,0,0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <img
+            src={`${BASE}${item.src}`}
+            alt={item.name}
+            draggable={false}
+            style={{
+              width: '90%',
+              height: '90%',
+              objectFit: 'contain',
+            }}
+          />
+        </div>
+        {/* 정보 */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 * scale }}>
+            <Text size={17 * scale} weight={900}>{item.name}</Text>
+            <Text size={11 * scale} color="rgba(255,255,255,0.5)" weight={700} as="span">
+              {item.jobTitle}
+            </Text>
+          </div>
+          <Text
+            size={11 * scale}
+            color="rgba(255,255,255,0.55)"
+            lineHeight={1.4}
+            style={{ marginTop: 2 * scale, whiteSpace: 'pre-line' }}
+          >
+            {formattedDesc}
+          </Text>
+        </div>
+      </div>
+
+      {/* 결제 정보 — 3단 */}
+      <div
+        style={{
+          background: 'rgba(0,0,0,0.35)',
+          borderRadius: 12 * scale,
+          padding: `${12 * scale}px ${14 * scale}px`,
+          marginBottom: 18 * scale,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8 * scale,
+        }}
+      >
+        {/* 보유 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text size={13 * scale} color="rgba(255,255,255,0.6)" as="span">
+            보유 {label}
+          </Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 * scale }}>
+            <Icon size={18 * scale} />
+            <Text
+              size={15 * scale}
+              weight={900}
+              color={insufficient ? '#e8593c' : undefined}
+              as="span"
+            >
+              {currentBalance.toLocaleString()}개
+            </Text>
+          </div>
+        </div>
+
+        {/* 결제 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text size={13 * scale} color="rgba(255,255,255,0.6)" as="span">
+            결제 {label}
+          </Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 * scale }}>
+            <Icon size={18 * scale} />
+            <Text size={15 * scale} weight={900} color="#e8593c" as="span">
+              − {item.price.toLocaleString()}개
+            </Text>
+          </div>
+        </div>
+
+        {/* 구분선 */}
+        <div style={{ height: 1 * scale, background: 'rgba(255,255,255,0.08)' }} />
+
+        {/* 결제 후 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text size={13 * scale} color="rgba(255,255,255,0.7)" as="span">
+            결제 후 {label}
+          </Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 * scale }}>
+            <Icon size={18 * scale} />
+            <Text
+              size={16 * scale}
+              weight={900}
+              color={isCoin ? '#ffd24a' : '#00d4ff'}
+              as="span"
+            >
+              {balanceAfter.toLocaleString()}개
+            </Text>
+          </div>
+        </div>
+      </div>
+
+      {/* 버튼 */}
+      <div style={{ display: 'flex', gap: 8 * scale }}>
+        <TapButton
+          onTap={onCancel}
+          style={{
+            flex: 1,
+            padding: `${14 * scale}px`,
+            background: 'rgba(255,255,255,0.08)',
+            border: `${1.5 * scale}px solid rgba(255,255,255,0.15)`,
+            borderRadius: 12 * scale,
+            textAlign: 'center',
+          }}
+        >
+          <Text size={15 * scale} weight={700} color="rgba(255,255,255,0.7)" as="span">
+            취소
+          </Text>
+        </TapButton>
+        <TapButton
+          onTap={insufficient ? onCancel : onConfirm}
+          style={{
+            flex: 1.2,
+            padding: `${14 * scale}px`,
+            background: insufficient ? 'rgba(232,89,60,0.2)' : '#ffd24a',
+            border: `${1.5 * scale}px solid ${insufficient ? '#e8593c' : '#ffc107'}`,
+            borderRadius: 12 * scale,
+            textAlign: 'center',
+            opacity: insufficient ? 0.6 : 1,
+          }}
+        >
+          <Text
+            size={15 * scale}
+            weight={900}
+            color={insufficient ? '#e8593c' : '#3a2800'}
+            as="span"
+          >
+            {insufficient ? `${label} 부족` : '구매하기'}
+          </Text>
+        </TapButton>
+      </div>
+    </ModalShell>
   );
 }
 

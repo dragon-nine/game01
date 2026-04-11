@@ -35,24 +35,24 @@ export interface MissionDef {
   isAllClear?: boolean;
 }
 
-/* ── 일일 미션 (총 코인 150) ── */
+/* ── 일일 미션 (매일 00시 리셋, 총 코인 150) ── */
 
 export const DAILY_MISSIONS: MissionDef[] = [
-  { id: 'd1',    title: '출근 도장',  desc: '첫 판 플레이',    statKey: 'plays',     target: 1, reward: { coin: 30 } },
-  { id: 'd2',    title: '야근 3회',    desc: '3판 플레이',      statKey: 'plays',     target: 3, reward: { coin: 50 } },
-  { id: 'd3',    title: '오늘의 목표', desc: '50점 이상 달성',  statKey: 'bestScore', target: 50, reward: { coin: 40 } },
-  { id: 'd_all', title: '올클리어',    desc: '오늘 미션 3개 모두', statKey: 'plays', target: 3, reward: { coin: 30 }, isAllClear: true },
+  { id: 'd1',    title: '출근 도장',  desc: '첫 판 플레이',        statKey: 'plays',     target: 1,   reward: { coin: 30 } },
+  { id: 'd2',    title: '연속 퇴근',  desc: '10판 플레이',         statKey: 'plays',     target: 10,  reward: { coin: 50 } },
+  { id: 'd3',    title: '오늘의 목표', desc: '100점 이상 달성',     statKey: 'bestScore', target: 100, reward: { coin: 40 } },
+  { id: 'd_all', title: '올클리어',    desc: '오늘 미션 3개 모두',  statKey: 'plays',     target: 3,   reward: { coin: 30 }, isAllClear: true },
 ];
 
-/* ── 주간 미션 (총 코인 1000 + 보석 5) ── */
+/* ── 주간 미션 (월요일 리셋, 총 코인 1000 + 보석 5) ── */
 
 export const WEEKLY_MISSIONS: MissionDef[] = [
-  { id: 'w1',    title: '주간 근무',   desc: '15판 플레이',      statKey: 'plays',     target: 15, reward: { coin: 200 } },
-  { id: 'w2',    title: '실력 인정',   desc: '100점 이상 1회',   statKey: 'bestScore', target: 100, reward: { coin: 150 } },
-  { id: 'w3',    title: '도전장 장인', desc: '도전장 3회',       statKey: 'challenges', target: 3, reward: { coin: 150 } },
-  { id: 'w4',    title: '야근 마스터', desc: '25판 플레이',      statKey: 'plays',     target: 25, reward: { coin: 200, gem: 2 } },
-  { id: 'w5',    title: '에이스 사원', desc: '200점 이상 1회',   statKey: 'bestScore', target: 200, reward: { coin: 100, gem: 3 } },
-  { id: 'w_all', title: '올클리어',    desc: '주간 미션 5개 모두', statKey: 'plays',  target: 5, reward: { coin: 200 }, isAllClear: true },
+  { id: 'w1',    title: '주간 근무',   desc: '50판 플레이',        statKey: 'plays',      target: 50,  reward: { coin: 200 } },
+  { id: 'w2',    title: '실력 인정',   desc: '300점 이상 1회',     statKey: 'bestScore',  target: 300, reward: { coin: 150 } },
+  { id: 'w3',    title: '도전장 장인', desc: '도전장 3회 공유',    statKey: 'challenges', target: 3,   reward: { coin: 150 } },
+  { id: 'w4',    title: '야근 마스터', desc: '100판 플레이',       statKey: 'plays',      target: 100, reward: { coin: 200, gem: 2 } },
+  { id: 'w5',    title: '에이스 사원', desc: '800점 이상 1회',     statKey: 'bestScore',  target: 800, reward: { coin: 100, gem: 3 } },
+  { id: 'w_all', title: '올클리어',    desc: '주간 미션 5개 모두', statKey: 'plays',      target: 5,   reward: { coin: 200 }, isAllClear: true },
 ];
 
 /** 통계 객체에서 특정 statKey 값 추출 */

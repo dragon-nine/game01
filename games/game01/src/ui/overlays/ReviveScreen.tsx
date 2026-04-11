@@ -4,6 +4,7 @@ import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
 import { GemIcon } from '../components/CurrencyIcons';
 import { storage } from '../../game/services/storage';
+import { isAdRemoved } from '../../game/services/billing';
 import { LayoutText } from '../components/LayoutText';
 import { LayoutButton } from '../components/LayoutButton';
 import { buttonStyleDefaults, typeScale } from '../components/design-tokens';
@@ -41,8 +42,18 @@ interface Props {
 export function ReviveScreen({ data, onSkip }: Props) {
   const { score } = data;
 
-  // 부활 화면에서는 멘트와 ranking 버튼 숨김
-  const excludeIds = useMemo(() => ['quoteText', 'go-btn-ranking'], []);
+  // 부활 광고 제거 구매자는 보석 부활 버튼도 숨김 (광고 버튼 문구도 아래에서 교체)
+  const adRemoved = isAdRemoved();
+
+  // 부활 화면에서는 멘트와 ranking 버튼 숨김 + 광고 제거 시 보석 부활도 숨김
+  const excludeIds = useMemo(
+    () => {
+      const ids = ['quoteText', 'go-btn-ranking'];
+      if (adRemoved) ids.push('go-btn-home');
+      return ids;
+    },
+    [adRemoved],
+  );
   const { positions, elements, scale, ready } = useLayout('game-over', IMAGE_MAP, excludeIds);
 
   const characterId = storage.getSelectedCharacter();
@@ -71,10 +82,11 @@ export function ReviveScreen({ data, onSkip }: Props) {
   const textOverrides: Record<string, string> = useMemo(() => ({
     'bestText': '이어서 도전?',
     'scoreText': `${score}`,
-    'go-btn-revive': '광고 보고 부활',
+    // 부활 광고 제거 구매자 → 광고 없이 바로 부활 ("이어서 도전")
+    'go-btn-revive': adRemoved ? '이어서 도전' : '광고 보고 부활',
     'go-btn-home': `보석 ${REVIVE_GEM_COST}개로 부활`,
     'go-btn-challenge': '건너뛰기',
-  }), [score]);
+  }), [score, adRemoved]);
 
   const clickHandlers: Record<string, () => void> = useMemo(() => ({
     'go-btn-revive': handleAdRevive,

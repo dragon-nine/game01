@@ -6,7 +6,7 @@ import {
 import { Road } from '../Road';
 import { Player } from '../Player';
 import { HUD } from '../HUD';
-import { logEvent, logScreen } from '../services/analytics';
+import { logEvent } from '../services/analytics';
 import { adService } from '../services/ad-service';
 import { gameBus } from '../event-bus';
 import { storage } from '../services/storage';
@@ -127,7 +127,6 @@ export class CommuteScene extends Phaser.Scene {
 
     this.bgm = this.sound.get('bgm-menu') ?? undefined;
 
-    logScreen('screen_game');
     logEvent('game_start');
     storage.recordPlayStart();
     this.guideCount = 0;
@@ -196,7 +195,10 @@ export class CommuteScene extends Phaser.Scene {
       playSfx: (key, vol) => this.playSfx(key, vol),
       vibrate: (p) => this.vibrate(p),
       getCoinsEarnedThisGame: () => this.coinsEarnedThisGame,
-      incrementCoinsEarnedThisGame: () => { this.coinsEarnedThisGame += 1; },
+      incrementCoinsEarnedThisGame: () => {
+        this.coinsEarnedThisGame += 1;
+        gameBus.emit('coin-update', this.coinsEarnedThisGame);
+      },
     };
   }
 

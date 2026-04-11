@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { gameBus } from '../event-bus';
-import { logScreen } from '../services/analytics';
 import { storage } from '../services/storage';
 import { gameConfig } from '../game.config';
 
@@ -42,8 +41,6 @@ export class BootScene extends Phaser.Scene {
         if (!bgmMuted) menuBgm.play();
       }
     } catch { /* autoplay 차단 — 무시 */ }
-
-    logScreen('screen_boot');
 
     // 중요: 리스너부터 먼저 등록 (메인 화면 표시 전에 준비 완료)
     const unsubStart = gameBus.on('start-game', () => {

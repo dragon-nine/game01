@@ -31,6 +31,7 @@ const KEYS = {
   attendance: 'attendance',
   missionState: 'missionState',
   playStats: 'playStats',
+  freeRewardState: 'freeRewardState',
 } as const;
 
 const DEFAULT_CHARACTER = 'rabbit';
@@ -92,7 +93,19 @@ export interface PlayStats {
   weekly: PlayStatsPeriod;
 }
 
+/** 상점 무료 보상 — 일 N회 제한용 카운트 (매일 자정 리셋) */
+export interface FreeRewardState {
+  /** 보상 id → 오늘 수령한 횟수 */
+  counts: Record<string, number>;
+  /** 리셋 키 YYYY-MM-DD */
+  resetKey: string;
+}
+
 const DEFAULT_ATTENDANCE: AttendanceState = { nextDay: 1, lastClaimDate: '' };
+
+function defaultFreeRewardState(): FreeRewardState {
+  return { counts: {}, resetKey: todayStr() };
+}
 
 function defaultMissionState(): MissionState {
   return {
@@ -140,7 +153,14 @@ export const storage = {
   },
 
   addNum(key: NumKey, delta: number): number {
-    const next = this.getNum(key) + delta;
+    // 방어: NaN/Infinity 거부, 0~MAX_SAFE_INTEGER로 클램프
+    if (!Number.isFinite(delta)) {
+      console.warn(`[storage] addNum rejected non-finite delta: ${delta}`);
+      return this.getNum(key);
+    }
+    const current = this.getNum(key);
+    const raw = current + delta;
+    const next = Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, raw));
     this.setNum(key, next);
     return next;
   },
@@ -342,7 +362,55 @@ export const storage = {
     state.weekly.challenges += 1;
     this.setPlayStats(state);
   },
+
+  /* ──────────────  Free Reward (상점 일 N회 제한)  ────────────── */
+
+  /** 무료 보상 상태 조회 — 날짜 바뀌면 자동 리셋 */
+  getFreeRewardState(): FreeRewardState {
+    const today = todayStr();
+    const raw = localStorage.getItem(KEYS.freeRewardState);
+    let state: FreeRewardState;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        state = isFreeRewardState(parsed) ? parsed : defaultFreeRewardState();
+      } catch {
+        state = defaultFreeRewardState();
+      }
+    } else {
+      state = defaultFreeRewardState();
+    }
+    if (state.resetKey !== today) {
+      state = { counts: {}, resetKey: today };
+      localStorage.setItem(KEYS.freeRewardState, JSON.stringify(state));
+    }
+    return state;
+  },
+
+  /** 특정 보상의 오늘 수령 횟수 */
+  getFreeRewardCount(id: string): number {
+    return this.getFreeRewardState().counts[id] || 0;
+  },
+
+  /** 수령 횟수 +1 후 새 값 반환 */
+  incrementFreeRewardCount(id: string): number {
+    const state = this.getFreeRewardState();
+    const next = (state.counts[id] || 0) + 1;
+    state.counts[id] = next;
+    localStorage.setItem(KEYS.freeRewardState, JSON.stringify(state));
+    return next;
+  },
 };
+
+function isFreeRewardState(v: unknown): v is FreeRewardState {
+  if (!v || typeof v !== 'object') return false;
+  const s = v as Partial<FreeRewardState>;
+  return (
+    !!s.counts &&
+    typeof s.counts === 'object' &&
+    typeof s.resetKey === 'string'
+  );
+}
 
 function isPlayStats(v: unknown): v is PlayStats {
   if (!v || typeof v !== 'object') return false;

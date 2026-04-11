@@ -1,5 +1,6 @@
 import { logEvent, logClick } from './services/analytics';
 import { adService } from './services/ad-service';
+import { isAdRemoved } from './services/billing';
 import { gameBus } from './event-bus';
 import { storage } from './services/storage';
 import { HUD } from './HUD';
@@ -40,12 +41,22 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     // ad-service 내부에도 dedupe가 있어 2차 가드.
     if (deps.scene.scene.isPaused('CommuteScene')) return;
 
+    const lifecycleDeps = deps.getLifecycleDeps();
+
+    // 부활 광고 제거 구매한 사용자 — 광고 바이패스하고 즉시 부활.
+    // (이 분기는 부활 전용. 상점의 무료 보상 광고는 그대로 표시됨.)
+    if (isAdRemoved()) {
+      logEvent('revive_ad_bypass', { score: deps.getScore() });
+      gameBus.emit('screen-change', 'playing');
+      doRevive(lifecycleDeps);
+      return;
+    }
+
     logEvent('revive_ad_click', { score: deps.getScore() });
     gameBus.emit('screen-change', 'revive-ad');
 
     // 광고 동안 게임 시뮬레이션 정지 (delta 폭주 방지)
     deps.scene.scene.pause();
-    const lifecycleDeps = deps.getLifecycleDeps();
     const bgm = lifecycleDeps.getBgm();
     bgm?.pause();
 

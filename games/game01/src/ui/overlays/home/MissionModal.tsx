@@ -6,6 +6,7 @@ import { Text } from '../../components/Text';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
+import { logEvent } from '../../../game/services/analytics';
 import {
   DAILY_MISSIONS,
   WEEKLY_MISSIONS,
@@ -76,6 +77,12 @@ export function MissionModal({ onClose }: Props) {
     setMissionState(storage.getMissionState());
     setStats(storage.getPlayStats());
     gameBus.emit('play-sfx', 'sfx-click');
+    logEvent('mission_claim', {
+      id: m.id,
+      period,
+      coin: m.reward.coin ?? 0,
+      gem: m.reward.gem ?? 0,
+    });
     const summary = formatReward(m.reward);
     gameBus.emit('toast', `${summary} 받음!`);
   };

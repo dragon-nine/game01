@@ -50,6 +50,7 @@ export class HUD {
     // 초기 상태 전송
     gameBus.emit('score-update', 0);
     gameBus.emit('timer-update', 1);
+    gameBus.emit('coin-update', 0);
   }
 
   updateScore(score: number) {

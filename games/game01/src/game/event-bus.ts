@@ -37,6 +37,7 @@ type EventMap = {
   // Gameplay HUD: Phaser → React
   'score-update': number;
   'timer-update': number;  // 0~1 비율
+  'coin-update': number;   // 이번 판 획득 코인 수 (누적값 아님)
   // Gameplay HUD: React → Phaser
   'action-switch': void;
   'action-forward': void;

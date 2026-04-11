@@ -51,7 +51,9 @@ interface Props {
  *    - 'failed'   → 실패 토스트
  *
  * Provider는 GameContainer에서 플랫폼에 따라 자동 설정 (Google AdMob / Toss / Mock).
- * 광고 제거 구매한 사용자는 즉시 보상 지급.
+ *
+ * NOTE: 부활 광고 제거 구매(isAdRemoved)는 부활 흐름에만 적용되고,
+ * 상점 무료 보상 광고는 영향 받지 않음.
  */
 export function AdRewardButton({
   onReward,

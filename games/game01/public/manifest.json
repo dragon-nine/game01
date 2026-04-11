@@ -1,11 +1,24 @@
 {
-  "name": "DragonNine",
-  "short_name": "DragonNine",
-  "description": "DragonNine Games",
+  "name": "직장인 잔혹사 : 퇴근길",
+  "short_name": "직장인 잔혹사",
+  "description": "2레인 러너 게임 — 퇴근길은 쉽지 않다",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0a14",
+  "background_color": "#000000",
   "theme_color": "#e94560",
-  "icons": []
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "600x600",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "600x600",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }

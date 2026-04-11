@@ -18,6 +18,7 @@ const IMAGE_MAP: Record<string, string> = {
 export function GameplayHUD() {
   const { positions, elements, scale, ready } = useLayout('gameplay', IMAGE_MAP);
   const [score, setScore] = useState(0);
+  const [coins, setCoins] = useState(0);
   const gaugeFillRef = useRef<HTMLDivElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
   const [showIntro, setShowIntro] = useState(!tutorialDone);
@@ -39,7 +40,8 @@ export function GameplayHUD() {
       // 첫 전진 시 인트로 메시지 제거
       if (showIntro) setShowIntro(false);
     });
-    return () => { unsub1(); unsub2(); unsub3(); };
+    const unsub4 = gameBus.on('coin-update', setCoins);
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
   }, [showIntro]);
 
   const handleSwitch = useCallback(() => {
@@ -138,6 +140,65 @@ export function GameplayHUD() {
           draggable={false}
         />
       </TapButton>
+
+      {/* 코인 카운터 — 점수 아래 (테두리/배경 없이 아이콘 + 숫자만) */}
+      {(() => {
+        const scorePos = pos('scoreText');
+        if (!scorePos) return null;
+        const scoreRawTop = scorePos.y - scorePos.displayHeight * scorePos.originY;
+        // 점수 아래 여유 간격
+        const coinTop = scoreRawTop + scoreFontSize + 20 * scale;
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              top: `calc(var(--sat, 0px) + ${coinTop}px)`,
+              // 점수와 동일하게 가로 중앙 정렬
+              left: scorePos.x - scorePos.displayWidth * scorePos.originX,
+              width: scorePos.displayWidth,
+              display: 'flex',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8 * scale,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <img
+                src={`${BASE}ui/coin.png`}
+                alt=""
+                draggable={false}
+                style={{
+                  width: 30 * scale,
+                  height: 30 * scale,
+                  display: 'block',
+                  objectFit: 'contain',
+                  filter: `drop-shadow(0 ${2 * scale}px ${4 * scale}px rgba(0, 0, 0, 0.6))`,
+                }}
+              />
+              <Text
+                size={28 * scale}
+                weight={900}
+                as="span"
+                color="#ffd24a"
+                style={{
+                  WebkitTextStroke: `${2.5 * scale}px #000`,
+                  paintOrder: 'stroke fill',
+                  letterSpacing: 0.5,
+                  lineHeight: 1,
+                }}
+              >
+                {coins}
+              </Text>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 점수 */}
       {pos('scoreText') && (

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { getClaimableMissionCount } from '../../../game/services/missions';
+import { isAdRemoved } from '../../../game/services/billing';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
 import { TapButton } from '../../components/TapButton';
@@ -29,6 +30,7 @@ export function HomeTab({ scale }: Props) {
   const bestScore = storage.getBestScore();
   const coins = storage.getNum('coins');
   const gems = storage.getNum('gems');
+  const adRemoved = isAdRemoved();
   const [openModal, setOpenModal] = useState<'attendance' | 'mission' | 'debug' | null>(null);
 
   // 뱃지 — 모달 닫힐 때마다 재계산 (claim 후 즉시 반영)
@@ -114,17 +116,21 @@ export function HomeTab({ scale }: Props) {
           pointerEvents: 'auto',
         }}
       >
-        {/* 좌측: 광고제거 (단일 동그라미) */}
-        <CircleButton
-          accent="#ff6b3c"
-          scale={scale}
-          onTap={() => gameBus.emit('show-ad-remove', undefined)}
-        >
-          <svg width={38 * scale} height={38 * scale} viewBox="0 0 24 24">
-            <text x="12" y="17" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Arial Black, sans-serif" fill="#fff" letterSpacing="-0.5">AD</text>
-            <line x1="3" y1="3" x2="21" y2="21" stroke="#ff6b3c" strokeWidth="3" strokeLinecap="round" />
-          </svg>
-        </CircleButton>
+        {/* 좌측: 부활 광고 제거 (단일 동그라미) — 구매 후 숨김 */}
+        {adRemoved ? (
+          <div style={{ width: 48 * scale, height: 48 * scale }} />
+        ) : (
+          <CircleButton
+            accent="#ff6b3c"
+            scale={scale}
+            onTap={() => gameBus.emit('show-ad-remove', undefined)}
+          >
+            <svg width={38 * scale} height={38 * scale} viewBox="0 0 24 24">
+              <text x="12" y="17" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Arial Black, sans-serif" fill="#fff" letterSpacing="-0.5">AD</text>
+              <line x1="3" y1="3" x2="21" y2="21" stroke="#ff6b3c" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+          </CircleButton>
+        )}
 
         {/* 우측: 코인/보석/설정 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 * scale }}>
@@ -395,7 +401,7 @@ function FloatingMenuButton({
   );
 }
 
-/* ── 단일 동그라미 버튼 (광고제거/설정용) ── */
+/* ── 단일 동그라미 버튼 (부활 광고 제거/설정용) ── */
 
 function CircleButton({
   accent,
