@@ -6,6 +6,12 @@ import { loadQuotes } from '../../game/game-over-quotes';
 import { adService } from '../../game/services/ad-service';
 import { logScreen } from '../../game/services/analytics';
 import { isGoogle, isTossNative } from '../../game/platform';
+// billing/leaderboard 는 다른 컴포넌트에서도 정적으로 import 됨 → 동적 import는
+// 코드 스플릿 효과가 없으므로 정적 import로 통일 (Vite 경고 해소).
+// 두 모듈 모두 ~2KB 얇은 래퍼이고, 무거운 SDK(@apps-in-toss/web-framework, play-games)는
+// 모듈 내부에서 별도로 동적 import 하므로 메인 번들 영향 거의 없음.
+import { restoreAdRemove } from '../../game/services/billing';
+import { initGPGS } from '../../game/services/leaderboard';
 import { MainScreen } from '../overlays/MainScreen';
 import { SettingsOverlay } from '../overlays/SettingsOverlay';
 import { PauseOverlay } from '../overlays/PauseOverlay';
@@ -35,17 +41,15 @@ export function GameContainer() {
     loadQuotes(); // R2에서 게임오버 멘트 미리 로드
 
     // 플랫폼별 초기화
+    // ※ admob/toss-ad/mock-ad provider 는 플랫폼 전용이라 동적 import 유지 (실제 코드 스플릿됨)
+    // ※ billing.restoreAdRemove / leaderboard.initGPGS 는 정적 import + 직접 호출
     if (isGoogle()) {
       // Google: AdMob + GPGS + 구매복원
       import('../../game/services/admob-provider').then(({ AdMobProvider }) => {
         adService.setProvider(new AdMobProvider());
       }).catch((e) => console.warn('[AdMob] 초기화 실패:', e));
-      import('../../game/services/leaderboard').then(({ initGPGS }) => {
-        initGPGS();
-      }).catch((e) => console.warn('[GPGS] 초기화 실패:', e));
-      import('../../game/services/billing').then(({ restoreAdRemove }) => {
-        restoreAdRemove();
-      }).catch((e) => console.warn('[Billing] 복원 실패:', e));
+      initGPGS().catch((e) => console.warn('[GPGS] 초기화 실패:', e));
+      restoreAdRemove().catch((e) => console.warn('[Billing] 복원 실패:', e));
     } else if (isTossNative()) {
       // 토스 인앱 (실제 SDK 호출 가능): 광고 프로바이더 + 구매복원
       import('../../game/services/toss-ad-provider').then(async ({ TossAdProvider }) => {
@@ -53,9 +57,7 @@ export function GameContainer() {
         adService.setProvider(provider);
         await provider.preload(); // 광고 로드 완료까지 대기
       }).catch((e) => console.warn('[TossAd] 초기화 실패:', e));
-      import('../../game/services/billing').then(({ restoreAdRemove }) => {
-        restoreAdRemove();
-      }).catch((e) => console.warn('[Billing] 복원 실패:', e));
+      restoreAdRemove().catch((e) => console.warn('[Billing] 복원 실패:', e));
     } else if (import.meta.env.DEV) {
       // 일반 브라우저 + DEV: mock 광고 프로바이더 (테스트용)
       import('../../game/services/mock-ad-provider').then(({ MockAdProvider }) => {

@@ -28,5 +28,8 @@ export default defineConfig({
   build: {
     outDir: '../../dist/game01',
     emptyOutDir: true,
+    // Phaser 게임 특성상 메인 청크가 1.5MB대가 정상 (Phaser ~280KB gz, gzip 총 435KB).
+    // 기본 500KB 임계치는 콘텐츠 사이트 기준이라 게임엔 너무 빡빡함. 1700KB로 상향.
+    chunkSizeWarningLimit: 1700,
   },
 })
