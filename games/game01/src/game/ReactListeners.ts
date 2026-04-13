@@ -135,14 +135,25 @@ export function setupReactListeners(deps: ReactListenerDeps) {
   });
 }
 
+// 토스 햅틱 — 모듈 레벨에서 1회만 로드해 참조 캐시.
+// 매 탭마다 import() 호출 시 생기는 Promise/microtask 오버헤드로 인한
+// 입력 드롭 현상 회피. (iOS WebKit에서 microtask 중 터치 이벤트 드롭 알려진 이슈)
+type TossHaptic = (opts: { type: 'tap' }) => void;
+let cachedTossHaptic: TossHaptic | null = null;
+if (isToss() && isTossNative()) {
+  import('@apps-in-toss/web-framework')
+    .then((m) => { cachedTossHaptic = m.generateHapticFeedback as TossHaptic; })
+    .catch(() => { /* 미지원 환경 무시 */ });
+}
+
 function vibrate(pattern: number | number[]) {
-  // 토스 네이티브: 자체 햅틱 SDK 사용 (iOS/Android 모두 지원)
-  if (isToss() && isTossNative()) {
-    import('@apps-in-toss/web-framework').then(({ generateHapticFeedback }) => {
-      generateHapticFeedback({ type: 'tap' });
-    }).catch(() => { /* 미지원 환경 무시 */ });
+  // 토스 네이티브: 캐시된 함수 참조 사용 (동기 호출, Promise X)
+  if (cachedTossHaptic) {
+    cachedTossHaptic({ type: 'tap' });
     return;
   }
+  // 토스 환경인데 아직 로드 중이면 스킵 (첫 탭 한정 — 로딩 끝나면 위 분기로)
+  if (isToss() && isTossNative()) return;
   // 그 외(구글/웹): 표준 Vibration API
   try { navigator.vibrate?.(pattern); } catch { /* 미지원 환경 무시 */ }
 }

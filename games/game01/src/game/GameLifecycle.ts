@@ -118,6 +118,9 @@ export function endGame(deps: LifecycleDeps) {
 
   const bestScore = storage.updateBestScore(deps.getScore());
   storage.recordPlayScore(deps.getScore());
+  // 게임 중 누적된 코인/점수 메모리 캐시를 즉시 localStorage에 persist.
+  // (평소엔 200ms 배치 flush이므로, 게임오버 시 확정적 flush 필요)
+  storage.flushNums();
 
   gameBus.emit('game-over-data', {
     score: deps.getScore(),
