@@ -18,17 +18,21 @@ const IMAGE_MAP: Record<string, string> = {
 
 export function GameplayHUD() {
   const { positions, elements, scale, ready } = useLayout('gameplay', IMAGE_MAP);
-  // 부활 재마운트 시 0 깜빡임 방지 — 라이브 캐시에서 초기값 공급
-  const [score, setScore] = useState(() => hudState.getScore());
-  const [coins, setCoins] = useState(() => hudState.getCoins());
+  // 점수/코인 초기값은 ref로만 보유. React state 안 씀 → 탭마다 리렌더 안 됨.
+  // (리렌더가 일어나면 iOS WebKit이 탭 이벤트 드롭함)
+  const scoreRef = useRef<HTMLSpanElement>(null);
+  const coinsRef = useRef<HTMLSpanElement>(null);
   const gaugeFillRef = useRef<HTMLDivElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
   const [showIntro, setShowIntro] = useState(!tutorialDone);
   const [guideHint, setGuideHint] = useState<'forward' | 'switch' | null>(tutorialDone ? null : 'forward');
 
   useEffect(() => {
-    const unsub1 = gameBus.on('score-update', setScore);
-    // 타이머는 React state 대신 DOM 직접 조작 → 리렌더 0번
+    // 점수 — DOM 직접 조작 (리렌더 0번)
+    const unsub1 = gameBus.on('score-update', (s) => {
+      if (scoreRef.current) scoreRef.current.textContent = String(s);
+    });
+    // 타이머 — DOM 직접 조작
     const unsub2 = gameBus.on('timer-update', (pct) => {
       const el = gaugeFillRef.current;
       if (!el) return;
@@ -37,12 +41,20 @@ export function GameplayHUD() {
       const bottomPct = Math.max(0, fillPct - slantPct);
       el.style.clipPath = `polygon(0% 0%, ${fillPct}% 0%, ${bottomPct}% 100%, 0% 100%)`;
     });
-    const unsub3 = gameBus.on('guide-hint', (hint) => {
-      setGuideHint(hint);
-      // 첫 전진 시 인트로 메시지 제거
-      if (showIntro) setShowIntro(false);
+    // 가이드 힌트 — 튜토리얼 중에만 구독. 완료 상태에선 리스너도 안 건다 (성능).
+    const unsub3 = tutorialDone
+      ? () => {}
+      : gameBus.on('guide-hint', (hint) => {
+          setGuideHint(hint);
+          if (showIntro) setShowIntro(false);
+        });
+    // 코인 — DOM 직접 조작
+    const unsub4 = gameBus.on('coin-update', (c) => {
+      if (coinsRef.current) coinsRef.current.textContent = String(c);
     });
-    const unsub4 = gameBus.on('coin-update', setCoins);
+    // 초기값 주입 (재마운트/부활 시 깜빡임 방지)
+    if (scoreRef.current) scoreRef.current.textContent = String(hudState.getScore());
+    if (coinsRef.current) coinsRef.current.textContent = String(hudState.getCoins());
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
   }, [showIntro]);
 
@@ -179,6 +191,7 @@ export function GameplayHUD() {
               }}
             />
             <Text
+              ref={coinsRef}
               size={24 * scale}
               weight={900}
               as="span"
@@ -190,7 +203,7 @@ export function GameplayHUD() {
                 lineHeight: 1,
               }}
             >
-              {coins}
+              {hudState.getCoins()}
             </Text>
           </div>
         );
@@ -199,6 +212,7 @@ export function GameplayHUD() {
       {/* 점수 */}
       {pos('scoreText') && (
         <Text
+          ref={scoreRef}
           size={scoreFontSize}
           weight={700}
           color={scoreEl?.textStyle?.color || '#fff'}
@@ -211,7 +225,7 @@ export function GameplayHUD() {
             paintOrder: 'stroke fill',
           }}
         >
-          {score}
+          {hudState.getScore()}
         </Text>
       )}
 

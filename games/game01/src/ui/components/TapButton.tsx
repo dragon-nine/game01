@@ -40,15 +40,35 @@ interface Props {
  * ```
  */
 export function TapButton({ onTap, style, children, className, pressScale = 0.92, scrollSafe = false, rapid = false }: Props) {
+  // rapid 모드(게임 인풋): React state 없이 CSS :active로만 press 피드백.
+  //   탭마다 setState → 리렌더가 iOS WebKit 터치 이벤트 드롭을 유발하는 현상 회피.
+  // 기본 모드(UI 버튼): 기존 setState 방식 유지 (저빈도 탭, 문제 없음).
   const [pressed, setPressed] = useState(false);
   const tapRef = useNativeTap(
     () => {
-      setPressed(true);
-      setTimeout(() => setPressed(false), 100);
+      if (!rapid) {
+        setPressed(true);
+        setTimeout(() => setPressed(false), 100);
+      }
       onTap();
     },
     { scrollSafe, rapid },
   );
+
+  if (rapid) {
+    return (
+      <div
+        ref={tapRef}
+        className={`tap-button-rapid${className ? ` ${className}` : ''}`}
+        style={{
+          ...style,
+          ['--press-scale' as string]: pressScale,
+        } as React.CSSProperties}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div

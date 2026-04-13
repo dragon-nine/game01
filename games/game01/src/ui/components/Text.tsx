@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { forwardRef, type CSSProperties, type ReactNode } from 'react';
 
 interface Props {
   /** 이미 스케일링된 px 값 */
@@ -19,32 +19,29 @@ interface Props {
  * GMarketSans 기반 텍스트 컴포넌트.
  * fontFamily 인라인 반복을 제거하기 위함.
  */
-export function Text({
-  size,
-  weight = 400,
-  color = '#fff',
-  align,
-  lineHeight,
-  style,
-  className,
-  as = 'div',
-  children,
-}: Props) {
-  const Tag = as;
+export const Text = forwardRef<HTMLDivElement | HTMLSpanElement, Props>(function Text(
+  { size, weight = 400, color = '#fff', align, lineHeight, style, className, as = 'div', children },
+  ref,
+) {
+  const commonStyle: CSSProperties = {
+    fontFamily: 'GMarketSans, sans-serif',
+    fontWeight: weight,
+    fontSize: size,
+    color,
+    ...(align && { textAlign: align }),
+    ...(lineHeight !== undefined && { lineHeight }),
+    ...style,
+  };
+  if (as === 'span') {
+    return (
+      <span ref={ref as React.Ref<HTMLSpanElement>} className={className} style={commonStyle}>
+        {children}
+      </span>
+    );
+  }
   return (
-    <Tag
-      className={className}
-      style={{
-        fontFamily: 'GMarketSans, sans-serif',
-        fontWeight: weight,
-        fontSize: size,
-        color,
-        ...(align && { textAlign: align }),
-        ...(lineHeight !== undefined && { lineHeight }),
-        ...style,
-      }}
-    >
+    <div ref={ref as React.Ref<HTMLDivElement>} className={className} style={commonStyle}>
       {children}
-    </Tag>
+    </div>
   );
-}
+});

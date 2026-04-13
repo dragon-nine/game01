@@ -88,10 +88,10 @@ export function scrollToCurrentRow(deps: MovementDeps) {
   deps.player.scrollToX(playerScreenX);
 }
 
-/** 가이드 힌트 전송 */
+/** 가이드 힌트 전송 — 튜토리얼 동안만 emit. 완료 후엔 호출 자체 생략(리스너 오버헤드 제거). */
 export function emitGuideHint(deps: MovementDeps) {
   if (storage.getBool('tutorialDone')) {
-    gameBus.emit('guide-hint', null);
+    // 튜토리얼 완료 상태 → 리스너 호출도 하지 않음 (탭 성능 최적화)
     return;
   }
   if (deps.getGuideCount() >= 20) {
