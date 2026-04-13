@@ -68,16 +68,29 @@ function attachClick(el: HTMLElement, onTap: () => void): () => void {
 }
 
 function attachRapid(el: HTMLElement, onTap: () => void): () => void {
-  let lastFireAt = -Infinity;
+  // 게임 인풋은 본질적으로 멀티터치 — 양손 엄지로 교대 탭 시
+  // 두 손가락이 동시에 화면에 있는 순간의 두 번째 터치는 isPrimary=false라
+  // 드롭됨. dedup은 같은 손가락의 같은 버튼 연타만 막도록 pointerId별로 관리.
+  const lastFireByPointer = new Map<number, number>();
   const onPointerDown = (e: PointerEvent) => {
-    if (!e.isPrimary) return;
     const now = performance.now();
-    if (now - lastFireAt < RAPID_DEDUP_MS) return;
-    lastFireAt = now;
+    const last = lastFireByPointer.get(e.pointerId) ?? -Infinity;
+    if (now - last < RAPID_DEDUP_MS) return;
+    lastFireByPointer.set(e.pointerId, now);
     onTap();
   };
+  // pointerId 누수 방지 — pointerup/cancel 시 정리
+  const onPointerEnd = (e: PointerEvent) => {
+    lastFireByPointer.delete(e.pointerId);
+  };
   el.addEventListener('pointerdown', onPointerDown);
-  return () => el.removeEventListener('pointerdown', onPointerDown);
+  el.addEventListener('pointerup', onPointerEnd);
+  el.addEventListener('pointercancel', onPointerEnd);
+  return () => {
+    el.removeEventListener('pointerdown', onPointerDown);
+    el.removeEventListener('pointerup', onPointerEnd);
+    el.removeEventListener('pointercancel', onPointerEnd);
+  };
 }
 
 function attachScrollSafe(el: HTMLElement, onTap: () => void): () => void {
