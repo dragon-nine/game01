@@ -104,6 +104,11 @@ export function GameContainer() {
           width: '100%',
           height: '100%',
           backgroundColor: '#000',
+          // Phaser canvas를 hit-test에서 제외 — 모든 인풋은 React DOM 오버레이에서 처리.
+          // (Phaser config의 input:{touch:false, mouse:false}로 Phaser는 이미 이벤트 무시하지만,
+          //  canvas element 자체는 여전히 hit-test 대상이라 iOS WebKit에서 overlay 자식 버튼의
+          //  pointer-events:auto 오버라이드가 간헐적으로 무시되는 버그 회피)
+          pointerEvents: 'none',
         }}
       />
 
