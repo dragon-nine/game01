@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { logScreen } from '../../game/services/analytics';
+import { adService } from '../../game/services/ad-service';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { BottomTabBar, type HomeTab as TabKey } from './home/BottomTabBar';
 import { HomeTab } from './home/HomeTab';
@@ -20,6 +21,11 @@ export function MainScreen() {
   const handleTabChange = (next: TabKey) => {
     if (next === tab) return;
     gameBus.emit('play-sfx', 'sfx-click');
+    // 상점 진입 시 무료 코인/보석 광고 미리 로드 — 카드 탭 시 즉시 표시
+    if (next === 'shop') {
+      adService.preload('gem');
+      adService.preload('coin');
+    }
     setTab(next);
   };
 

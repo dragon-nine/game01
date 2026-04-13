@@ -822,7 +822,13 @@ function FreeRewardCard({
   }
 
   return (
-    <AdRewardButton onReward={onReward} pressScale={0.95} scrollSafe style={cardStyle}>
+    <AdRewardButton
+      onReward={onReward}
+      rewardType={reward.kind}
+      pressScale={0.95}
+      scrollSafe
+      style={cardStyle}
+    >
       {cardContent}
     </AdRewardButton>
   );

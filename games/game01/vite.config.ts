@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import pkg from './package.json' with { type: 'json' }
 
 /** /game01 → /game01/ 리다이렉트 (dev server) */
 function trailingSlashRedirect(): Plugin {
@@ -18,10 +19,28 @@ function trailingSlashRedirect(): Plugin {
   };
 }
 
+// 빌드 시점 (KST, MM/DD HH:mm 형식)
+const buildTime = (() => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  return `${get('month')}/${get('day')} ${get('hour')}:${get('minute')}`;
+})();
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), trailingSlashRedirect()],
   base: '/game01/',
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_TIME__: JSON.stringify(buildTime),
+  },
   server: {
     host: '0.0.0.0',
   },

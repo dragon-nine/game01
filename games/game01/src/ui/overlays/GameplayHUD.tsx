@@ -215,10 +215,11 @@ export function GameplayHUD() {
         </Text>
       )}
 
-      {/* 좌측 버튼 (방향 전환) */}
+      {/* 좌측 버튼 (방향 전환) — 즉시 반응 + 빠른 연타 위해 rapid 모드 */}
       <TapButton
         onTap={handleSwitch}
         pressScale={0.85}
+        rapid
         style={{ ...boxStyle('btn-switch'), pointerEvents: 'auto' }}
       >
         <img
@@ -229,10 +230,11 @@ export function GameplayHUD() {
         />
       </TapButton>
 
-      {/* 우측 버튼 (전진) */}
+      {/* 우측 버튼 (전진) — 즉시 반응 + 빠른 연타 위해 rapid 모드 */}
       <TapButton
         onTap={handleForward}
         pressScale={0.85}
+        rapid
         style={{ ...boxStyle('btn-forward'), pointerEvents: 'auto' }}
       >
         <img

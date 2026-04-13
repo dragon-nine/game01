@@ -14,10 +14,14 @@ interface Props {
   pressScale?: number;
   /**
    * 스크롤 가능한 컨테이너(상점, 리스트 등) 안에 있을 때 true.
-   * 스크롤 시 클릭이 실행되지 않도록 touchend + 이동거리 검사를 사용.
-   * 게임 인풋(즉시 반응 필요)에는 사용하지 말 것.
+   * 스크롤 시 클릭이 실행되지 않도록 pointerup + 이동거리 검사를 사용.
    */
   scrollSafe?: boolean;
+  /**
+   * 게임 인풋(forward/switch)처럼 즉시 반응 + 빠른 연타가 필요할 때 true.
+   * pointerdown에서 즉시 발사. UI 버튼에는 사용하지 말 것 (기본 click 모드 사용).
+   */
+  rapid?: boolean;
 }
 
 /**
@@ -35,7 +39,7 @@ interface Props {
  * </TapButton>
  * ```
  */
-export function TapButton({ onTap, style, children, className, pressScale = 0.92, scrollSafe = false }: Props) {
+export function TapButton({ onTap, style, children, className, pressScale = 0.92, scrollSafe = false, rapid = false }: Props) {
   const [pressed, setPressed] = useState(false);
   const tapRef = useNativeTap(
     () => {
@@ -43,7 +47,7 @@ export function TapButton({ onTap, style, children, className, pressScale = 0.92
       setTimeout(() => setPressed(false), 100);
       onTap();
     },
-    { scrollSafe },
+    { scrollSafe, rapid },
   );
 
   return (

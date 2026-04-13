@@ -113,6 +113,8 @@ export class CommuteScene extends Phaser.Scene {
     gameBus.emit('screen-change', 'playing');
 
     adService.preload('revive');
+    // 코인 광고는 게임오버 "코인 2배" 버튼에서 사용 — 게임플레이 동안 미리 로드
+    adService.preload('coin');
   }
 
   update(_time: number, delta: number) {

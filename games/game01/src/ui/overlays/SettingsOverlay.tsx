@@ -102,6 +102,9 @@ export function SettingsOverlay() {
           CC BY 3.0
         </a>
         )
+        <div style={{ marginTop: 4 * scale, opacity: 0.7 }}>
+          v{__APP_VERSION__} ({__BUILD_TIME__})
+        </div>
       </div>
     </ModalShell>
   );
