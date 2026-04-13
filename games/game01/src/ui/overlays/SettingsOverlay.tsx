@@ -1,7 +1,9 @@
 import { gameBus } from '../../game/event-bus';
+import { storage } from '../../game/services/storage';
 import { useAudioToggles } from '../hooks/useAudioToggles';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { ModalShell } from '../components/ModalShell';
+import { TapButton } from '../components/TapButton';
 import { Text } from '../components/Text';
 import { Toggle } from '../components/Toggle';
 
@@ -12,6 +14,12 @@ export function SettingsOverlay() {
   const handleClose = () => {
     gameBus.emit('play-sfx', 'sfx-click');
     gameBus.emit('screen-change', 'main');
+  };
+
+  const handleReplayTutorial = () => {
+    gameBus.emit('play-sfx', 'sfx-click');
+    storage.setBool('tutorialDone', false);
+    gameBus.emit('toast', '다음 게임부터 튜토리얼이 표시됩니다');
   };
 
   return (
@@ -43,10 +51,57 @@ export function SettingsOverlay() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          marginBottom: 16 * scale,
         }}>
           <Text size={22 * scale} weight={700} color="#ddd" as="span">효과음</Text>
           <Toggle on={!sfxMuted} onToggle={handleSfxToggle} scale={scale} />
         </div>
+
+        {/* 구분선 */}
+        <div style={{
+          height: 1,
+          background: 'rgba(255, 255, 255, 0.08)',
+          margin: `${4 * scale}px 0 ${16 * scale}px`,
+        }} />
+
+        {/* 튜토리얼 다시 보기 */}
+        <TapButton
+          onTap={handleReplayTutorial}
+          pressScale={0.96}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <Text size={22 * scale} weight={700} color="#ddd" as="span">튜토리얼 다시 보기</Text>
+          <Text size={22 * scale} weight={700} color="#888" as="span">›</Text>
+        </TapButton>
+      </div>
+
+      {/* 음원 크레딧 — CodeManu BGM은 CC BY 3.0이라 법적으로 저작자 표시 필수 */}
+      <div
+        style={{
+          marginTop: 16 * scale,
+          textAlign: 'center',
+          fontSize: 11 * scale,
+          color: 'rgba(255, 255, 255, 0.45)',
+          fontFamily: 'sans-serif',
+          letterSpacing: 0.3,
+          lineHeight: 1.5,
+        }}
+      >
+        Music by CodeManu (
+        <a
+          href="https://creativecommons.org/licenses/by/3.0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'inherit', textDecoration: 'underline' }}
+        >
+          CC BY 3.0
+        </a>
+        )
       </div>
     </ModalShell>
   );

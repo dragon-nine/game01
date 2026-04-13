@@ -9,6 +9,7 @@ import { HUD } from '../HUD';
 import { logEvent } from '../services/analytics';
 import { adService } from '../services/ad-service';
 import { gameBus } from '../event-bus';
+import { hudState } from '../hud-state';
 import { storage } from '../services/storage';
 import { BackgroundManager } from '../BackgroundManager';
 import {
@@ -54,6 +55,7 @@ export class CommuteScene extends Phaser.Scene {
   init() {
     this.score = 0;
     this.coinsEarnedThisGame = 0;
+    hudState.reset();
     this.gameOver = false;
     this.currentRowIdx = 0;
     this.isFalling = false;
@@ -110,7 +112,7 @@ export class CommuteScene extends Phaser.Scene {
     // 그 다음 React에 playing 화면 표시
     gameBus.emit('screen-change', 'playing');
 
-    adService.preload();
+    adService.preload('revive');
   }
 
   update(_time: number, delta: number) {
@@ -197,6 +199,7 @@ export class CommuteScene extends Phaser.Scene {
       getCoinsEarnedThisGame: () => this.coinsEarnedThisGame,
       incrementCoinsEarnedThisGame: () => {
         this.coinsEarnedThisGame += 1;
+        hudState.setCoins(this.coinsEarnedThisGame);
         gameBus.emit('coin-update', this.coinsEarnedThisGame);
       },
     };

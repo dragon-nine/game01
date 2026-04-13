@@ -1,16 +1,25 @@
 /**
  * 광고 서비스 — 보상형 광고 통합 인터페이스
  *
+ * 리워드 타입별 독립 광고 그룹 지원:
+ *   - 'revive' : 부활 광고
+ *   - 'gem'    : 보석 보상 광고 (상점 무료 보상)
+ *   - 'coin'   : 코인 보상 광고 (게임오버 2배 보너스)
+ *
  * 사용 패턴:
- *   1. 게임 시작 시 adService.preload()
- *   2. 부활 버튼 클릭 시 adService.showRewarded((result) => { ... })
+ *   1. 게임 시작 시 adService.preload('revive')
+ *   2. 부활 버튼 클릭 시 adService.showRewarded('revive', (result) => { ... })
  *   3. 결과는 discriminated union으로 전달:
- *      - kind === 'rewarded' → 부활
- *      - kind === 'skipped'  → 사용자가 광고 스킵 (부활 안 함)
- *      - kind === 'failed'   → 기술적 실패 (부활 안 함)
+ *      - kind === 'rewarded' → 보상 지급 (userEarnedReward 이벤트 기반)
+ *      - kind === 'skipped'  → 사용자가 광고 스킵 (보상 안 함)
+ *      - kind === 'failed'   → 기술적 실패 (보상 안 함)
  */
 
 import { logEvent } from './analytics';
+import { gameBus } from '../event-bus';
+
+/** 리워드 타입 — 각 타입별로 별도 adGroupId/adUnitId 사용 */
+export type AdRewardType = 'revive' | 'gem' | 'coin';
 
 /** 광고 표시 결과 */
 export type AdResult =
@@ -19,28 +28,29 @@ export type AdResult =
   | { kind: 'failed'; error: Error };
 
 export interface AdProvider {
-  preload(): Promise<void>;
-  showRewarded(): Promise<AdResult>;
-  isReady(): boolean;
+  preload(type: AdRewardType): Promise<void>;
+  showRewarded(type: AdRewardType): Promise<AdResult>;
+  isReady(type: AdRewardType): boolean;
 }
 
 class AdService {
   private provider: AdProvider | null = null;
-  private preloadPromise: Promise<void> | null = null;
-  private currentShow: Promise<AdResult> | null = null;
-  private cancelled = false;
+  private preloadPromises = new Map<AdRewardType, Promise<void>>();
+  private currentShows = new Map<AdRewardType, Promise<AdResult>>();
+  private cancelledTypes = new Set<AdRewardType>();
 
   setProvider(provider: AdProvider) {
     this.provider = provider;
   }
 
   /** 광고 미리 로드 */
-  preload() {
+  preload(type: AdRewardType) {
     if (!this.provider) return;
-    if (this.provider.isReady()) return;
-    this.preloadPromise = this.provider.preload().catch(() => {
+    if (this.provider.isReady(type)) return;
+    const promise = this.provider.preload(type).catch(() => {
       // 로드 실패 — showRewarded에서 처리
     });
+    this.preloadPromises.set(type, promise);
   }
 
   /**
@@ -52,75 +62,89 @@ class AdService {
    * NOTE: 광고 제거(부활 전용) 구매 여부는 여기서 체크하지 않음.
    * 부활 흐름에서만 별도로 isAdRemoved() 체크 후 바이패스. (상점 무료 보상 광고는 그대로)
    */
-  showRewarded(onResult: (result: AdResult) => void): void {
+  showRewarded(type: AdRewardType, onResult: (result: AdResult) => void): void {
     // 이미 진행 중 — 무시 (연타 방지)
-    if (this.currentShow) {
-      logEvent('ad_rewarded_dedup', {});
+    if (this.currentShows.has(type)) {
+      logEvent('ad_rewarded_dedup', { type });
       return;
     }
 
-    this.cancelled = false;
-    this.currentShow = this._doShow();
-    this.currentShow
+    this.cancelledTypes.delete(type);
+    const show = this._doShow(type);
+    this.currentShows.set(type, show);
+    show
       .then((result) => {
-        if (this.cancelled) return; // 취소된 경우 무시
+        if (this.cancelledTypes.has(type)) return; // 취소된 경우 무시
         onResult(result);
       })
       .finally(() => {
-        this.currentShow = null;
-        this.cancelled = false;
+        this.currentShows.delete(type);
+        this.cancelledTypes.delete(type);
       });
   }
 
   /**
    * 진행 중인 광고 흐름 취소 (예: 사용자가 홈으로 나갈 때).
-   * 이미 표시 중인 네이티브 광고를 강제로 닫지는 못하지만,
-   * 결과 콜백 호출을 막아서 stale 콜백이 게임 상태를 건드리는 것을 방지.
+   * type을 지정하면 해당 타입만, 생략하면 전체 취소.
    */
-  cancel(): void {
-    if (this.currentShow) {
-      this.cancelled = true;
+  cancel(type?: AdRewardType): void {
+    if (type) {
+      if (this.currentShows.has(type)) {
+        this.cancelledTypes.add(type);
+      }
+    } else {
+      for (const t of this.currentShows.keys()) {
+        this.cancelledTypes.add(t);
+      }
     }
   }
 
-  private async _doShow(): Promise<AdResult> {
+  private async _doShow(type: AdRewardType): Promise<AdResult> {
     if (!this.provider) {
-      logEvent('ad_rewarded_no_provider', {});
+      logEvent('ad_rewarded_no_provider', { type });
       return { kind: 'failed', error: new Error('no_provider') };
     }
 
     // 광고 미로드 → 로드 대기 (최대 5초)
-    if (!this.provider.isReady()) {
-      this.preload();
+    if (!this.provider.isReady(type)) {
+      this.preload(type);
       const timeout = new Promise<void>((_, reject) =>
         setTimeout(() => reject(new Error('load_timeout')), 5000)
       );
       try {
-        await Promise.race([this.preloadPromise ?? Promise.reject(new Error('no_preload')), timeout]);
+        await Promise.race([this.preloadPromises.get(type) ?? Promise.reject(new Error('no_preload')), timeout]);
       } catch (e) {
-        logEvent('ad_rewarded_load_failed', { reason: (e as Error).message });
+        logEvent('ad_rewarded_load_failed', { type, reason: (e as Error).message });
         return { kind: 'failed', error: e as Error };
       }
-      if (!this.provider.isReady()) {
-        logEvent('ad_rewarded_not_ready', {});
+      if (!this.provider.isReady(type)) {
+        logEvent('ad_rewarded_not_ready', { type });
         return { kind: 'failed', error: new Error('not_ready') };
       }
     }
 
-    logEvent('ad_rewarded_show', {});
-    const result = await this.provider.showRewarded();
+    logEvent('ad_rewarded_show', { type });
+    // 광고 표시 중에는 BGM 등 게임 사운드가 깔리지 않도록 이벤트 브로드캐스트.
+    // 리스너(BootScene)가 BGM을 pause/resume 처리.
+    gameBus.emit('ad-show-start', undefined);
+    let result: AdResult;
+    try {
+      result = await this.provider.showRewarded(type);
+    } finally {
+      gameBus.emit('ad-show-end', undefined);
+    }
 
     // 결과별 분석 이벤트
     if (result.kind === 'rewarded') {
-      logEvent('ad_rewarded_complete', {});
+      logEvent('ad_rewarded_complete', { type });
     } else if (result.kind === 'skipped') {
-      logEvent('ad_rewarded_skipped', {});
+      logEvent('ad_rewarded_skipped', { type });
     } else {
-      logEvent('ad_rewarded_failed', { error: result.error.message });
+      logEvent('ad_rewarded_failed', { type, error: result.error.message });
     }
 
     // 다음 광고 미리 로드
-    this.preload();
+    this.preload(type);
 
     return result;
   }

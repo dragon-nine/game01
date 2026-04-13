@@ -1,6 +1,6 @@
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { TapButton } from './TapButton';
-import { adService } from '../../game/services/ad-service';
+import { adService, type AdRewardType } from '../../game/services/ad-service';
 import { gameBus } from '../../game/event-bus';
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
    * 실제 보상 지급(잔액 충전, 토스트 등)은 이 콜백에서.
    */
   onReward: () => void;
+  /** 리워드 타입 — adGroupId 결정. 기본 'gem' */
+  rewardType?: AdRewardType;
   /** 자식 요소 — 카드 안의 시각적 컨텐츠. TapButton과 동일하게 사용. */
   children?: ReactNode;
   /** 추가 스타일 */
@@ -37,26 +39,22 @@ interface Props {
  *
  * 사용:
  * ```tsx
- * <AdRewardButton onReward={() => storage.addNum('coins', 50)}>
+ * <AdRewardButton rewardType="gem" onReward={() => storage.addNum('gems', 5)}>
  *   <YourCardContent />
  * </AdRewardButton>
  * ```
  *
  * 내부 동작:
- * 1. 마운트 시 adService.preload() (광고 미리 로드)
- * 2. 탭 시 adService.showRewarded() 호출
+ * 1. 마운트 시 adService.preload(rewardType) (광고 미리 로드)
+ * 2. 탭 시 adService.showRewarded(rewardType) 호출
  * 3. 결과별 분기:
  *    - 'rewarded' → onReward() 호출
  *    - 'skipped'  → 안내 토스트
  *    - 'failed'   → 실패 토스트
- *
- * Provider는 GameContainer에서 플랫폼에 따라 자동 설정 (Google AdMob / Toss / Mock).
- *
- * NOTE: 부활 광고 제거 구매(isAdRemoved)는 부활 흐름에만 적용되고,
- * 상점 무료 보상 광고는 영향 받지 않음.
  */
 export function AdRewardButton({
   onReward,
+  rewardType = 'gem',
   children,
   style,
   className,
@@ -68,12 +66,12 @@ export function AdRewardButton({
 }: Props) {
   // 마운트 시 광고 preload
   useEffect(() => {
-    if (autoPreload) adService.preload();
-  }, [autoPreload]);
+    if (autoPreload) adService.preload(rewardType);
+  }, [autoPreload, rewardType]);
 
   const handleTap = () => {
     gameBus.emit('play-sfx', 'sfx-click');
-    adService.showRewarded((result) => {
+    adService.showRewarded(rewardType, (result) => {
       if (result.kind === 'rewarded') {
         onReward();
       } else if (result.kind === 'skipped') {

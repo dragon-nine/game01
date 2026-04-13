@@ -48,7 +48,7 @@ export function GameOverScreen({ data }: Props) {
       return;
     }
     gameBus.emit('play-sfx', 'sfx-click');
-    adService.showRewarded((result) => {
+    adService.showRewarded('coin', (result) => {
       if (result.kind === 'rewarded') {
         setBonusClaimed(true);
         storage.addNum('coins', coinsEarned);

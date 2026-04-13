@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { gameBus } from '../../game/event-bus';
+import { hudState } from '../../game/hud-state';
 import { storage } from '../../game/services/storage';
 import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
@@ -17,8 +18,9 @@ const IMAGE_MAP: Record<string, string> = {
 
 export function GameplayHUD() {
   const { positions, elements, scale, ready } = useLayout('gameplay', IMAGE_MAP);
-  const [score, setScore] = useState(0);
-  const [coins, setCoins] = useState(0);
+  // 부활 재마운트 시 0 깜빡임 방지 — 라이브 캐시에서 초기값 공급
+  const [score, setScore] = useState(() => hudState.getScore());
+  const [coins, setCoins] = useState(() => hudState.getCoins());
   const gaugeFillRef = useRef<HTMLDivElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
   const [showIntro, setShowIntro] = useState(!tutorialDone);

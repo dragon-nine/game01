@@ -1,39 +1,31 @@
 import { useCallback, useRef } from 'react';
 
 /**
- * 네이티브 DOM 이벤트로 안정적인 탭 핸들러 등록.
+ * 모든 입력 장치(터치/마우스/펜)에서 단 한 번만 onTap을 발사하는 훅.
  *
- * iOS WebKit의 onPointerDown 누락 문제를 우회하기 위한 훅.
- * 빠른 연속 입력이 중요한 게임 버튼에 사용.
+ * Pointer Events API를 사용해 touch/mouse/click 이벤트의 중복 발사를 구조적으로 제거.
+ * - `pointerdown`이 터치/마우스/펜을 하나의 스트림으로 통합
+ * - `click`은 키보드(Enter/Space) 접근성용 폴백
+ * - 합성 이벤트로 인한 2중 발사는 `DEDUP_WINDOW_MS` 시간창 내에서 억제
  *
- * 동작:
- * - touchstart {passive: false} + preventDefault → 후속 mouse 이벤트 차단 (중복 실행 방지)
- * - mousedown → 데스크탑(마우스) 호환
- * - React 합성 이벤트 우회 → 더 빠르고 누락 없음
+ * 모든 타임스탬프는 `performance.now()`로 통일 — 브라우저 간 `Event.timeStamp`
+ * 기준시 불일치(UNIX epoch vs DOMHighResTimeStamp)로 인한 억제 실패를 방지.
  *
  * 사용:
  *   const tapRef = useNativeTap(() => { ... });
  *   return <div ref={tapRef}>...</div>;
- *
- * callback ref 패턴 사용 — 엘리먼트가 마운트될 때 자동으로 리스너 등록.
- * useEffect 기반 ref와 달리 조건부 렌더링과 잘 동작함.
- *
- * 출처:
- * - https://github.com/facebook/react/issues/12901 (React onPointerDown iOS 누락)
- * - https://bugs.webkit.org/show_bug.cgi?id=211521 (WebKit 회귀)
- * - https://patrickhlauke.github.io/getting-touchy-presentation/ (모바일 입력 권장 패턴)
  */
 interface Options {
   /**
-   * 스크롤 가능한 컨테이너 안의 버튼인 경우 true.
-   * - touchstart에서 preventDefault 안 함 → 네이티브 스크롤 허용
-   * - touchend에서 손가락 이동 거리 검사 → 이동 시 onTap 무시 (스크롤로 간주)
-   * - 게임 인풋(즉시 반응 필요)에는 사용 X.
+   * 스크롤 가능한 컨테이너(상점, 리스트 등) 안의 버튼이면 true.
+   * - `pointerup`에서 발사 + 이동 거리 검사 → 스크롤과 탭 구분
+   * - 게임 인풋(즉시 반응 필요)에는 사용 X (기본값 false로 `pointerdown`에서 즉시 발사)
    */
   scrollSafe?: boolean;
 }
 
 const SCROLL_THRESHOLD_PX = 8;
+const DEDUP_WINDOW_MS = 500;
 
 export function useNativeTap(onTap: () => void, options: Options = {}) {
   const onTapRef = useRef(onTap);
@@ -46,94 +38,86 @@ export function useNativeTap(onTap: () => void, options: Options = {}) {
     cleanupRef.current?.();
     cleanupRef.current = null;
     if (!el) return;
+    cleanupRef.current = attachTap(el, () => onTapRef.current(), scrollSafe);
+  }, [scrollSafe]);
+}
 
-    let lastPrimaryFire = 0;
-    const CLICK_SUPPRESS_MS = 500;
+function attachTap(el: HTMLElement, onTap: () => void, scrollSafe: boolean): () => void {
+  // 단일 타임스탬프 기준으로 중복 억제 — 어떤 이벤트 경로로 들어오든 창 안에서는 1회만 발사.
+  let lastFireAt = -Infinity;
+  const fire = () => {
+    const now = performance.now();
+    if (now - lastFireAt < DEDUP_WINDOW_MS) return;
+    lastFireAt = now;
+    onTap();
+  };
 
-    if (scrollSafe) {
-      // 스크롤 친화 모드: touchend에서 발사, 이동 거리 검사
-      let startX = 0;
-      let startY = 0;
-      let moved = false;
+  // 키보드(Enter/Space) 및 합성 click 폴백. 최근 pointer 이벤트로 이미 발사됐다면 dedup.
+  const onClick = () => fire();
 
-      const onTouchStart = (e: TouchEvent) => {
-        const t = e.touches[0];
-        startX = t.clientX;
-        startY = t.clientY;
-        moved = false;
-        // preventDefault 호출 안 함 → 브라우저 스크롤 정상 동작
-      };
+  if (scrollSafe) {
+    let startX = 0;
+    let startY = 0;
+    let moved = false;
+    let tracking = false;
 
-      const onTouchMove = (e: TouchEvent) => {
-        if (moved) return;
-        const t = e.touches[0];
-        const dx = Math.abs(t.clientX - startX);
-        const dy = Math.abs(t.clientY - startY);
-        if (dx > SCROLL_THRESHOLD_PX || dy > SCROLL_THRESHOLD_PX) {
-          moved = true;
-        }
-      };
-
-      const onTouchEnd = (e: TouchEvent) => {
-        if (moved) return;
-        e.preventDefault(); // 후속 click 차단 (중복 방지)
-        lastPrimaryFire = e.timeStamp;
-        onTapRef.current();
-      };
-
-      const onMouseDown = () => {
-        lastPrimaryFire = performance.now();
-        onTapRef.current();
-      };
-
-      const onClick = () => {
-        const now = performance.now();
-        if (now - lastPrimaryFire < CLICK_SUPPRESS_MS) return;
-        onTapRef.current();
-      };
-
-      el.addEventListener('touchstart', onTouchStart, { passive: true });
-      el.addEventListener('touchmove', onTouchMove, { passive: true });
-      el.addEventListener('touchend', onTouchEnd);
-      el.addEventListener('mousedown', onMouseDown);
-      el.addEventListener('click', onClick);
-
-      cleanupRef.current = () => {
-        el.removeEventListener('touchstart', onTouchStart);
-        el.removeEventListener('touchmove', onTouchMove);
-        el.removeEventListener('touchend', onTouchEnd);
-        el.removeEventListener('mousedown', onMouseDown);
-        el.removeEventListener('click', onClick);
-      };
-      return;
-    }
-
-    // 기본 모드: touchstart 즉시 발사 (게임 인풋용)
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      lastPrimaryFire = e.timeStamp;
-      onTapRef.current();
+    const onPointerDown = (e: PointerEvent) => {
+      if (!e.isPrimary) return;
+      tracking = true;
+      moved = false;
+      startX = e.clientX;
+      startY = e.clientY;
     };
 
-    const onMouseDown = () => {
-      lastPrimaryFire = performance.now();
-      onTapRef.current();
+    const onPointerMove = (e: PointerEvent) => {
+      if (!tracking || moved) return;
+      if (
+        Math.abs(e.clientX - startX) > SCROLL_THRESHOLD_PX ||
+        Math.abs(e.clientY - startY) > SCROLL_THRESHOLD_PX
+      ) {
+        moved = true;
+      }
     };
 
-    const onClick = () => {
-      const now = performance.now();
-      if (now - lastPrimaryFire < CLICK_SUPPRESS_MS) return;
-      onTapRef.current();
+    const onPointerUp = (e: PointerEvent) => {
+      if (!tracking) return;
+      tracking = false;
+      if (moved) return;
+      fire();
+      // 터치의 경우 후속 합성 click을 막아 dedup 부담을 줄임 (안드로이드 WebView 대비)
+      if (e.pointerType === 'touch') e.preventDefault();
     };
 
-    el.addEventListener('touchstart', onTouchStart, { passive: false });
-    el.addEventListener('mousedown', onMouseDown);
+    const onPointerCancel = () => {
+      tracking = false;
+    };
+
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointercancel', onPointerCancel);
     el.addEventListener('click', onClick);
 
-    cleanupRef.current = () => {
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('mousedown', onMouseDown);
+    return () => {
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', onPointerUp);
+      el.removeEventListener('pointercancel', onPointerCancel);
       el.removeEventListener('click', onClick);
     };
-  }, [scrollSafe]);
+  }
+
+  // 기본 모드 (게임 인풋): pointerdown에서 즉시 발사 — 최저 지연.
+  const onPointerDown = (e: PointerEvent) => {
+    if (!e.isPrimary) return;
+    fire();
+  };
+
+  el.addEventListener('pointerdown', onPointerDown);
+  el.addEventListener('click', onClick);
+
+  return () => {
+    el.removeEventListener('pointerdown', onPointerDown);
+    el.removeEventListener('click', onClick);
+  };
 }

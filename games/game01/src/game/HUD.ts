@@ -1,5 +1,6 @@
 import { MAX_TIME, START_TIME } from './constants';
 import { gameBus } from './event-bus';
+import { hudState } from './hud-state';
 import { storage } from './services/storage';
 
 /**
@@ -55,11 +56,12 @@ export class HUD {
 
   updateScore(score: number) {
     this.currentScore = score;
+    hudState.setScore(score);
     gameBus.emit('score-update', score);
   }
 
   addTime() {
-    const bonus = Math.max(0.2, 0.4 - (this.elapsed / 60) * 0.2);
+    const bonus = Math.max(0.1, 0.4 - (this.elapsed / 60) * 0.3);
     this.timeLeft = Math.min(MAX_TIME, this.timeLeft + bonus);
     this.emitTimer();
   }

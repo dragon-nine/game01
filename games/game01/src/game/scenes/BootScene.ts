@@ -70,11 +70,22 @@ export class BootScene extends Phaser.Scene {
       }
     });
 
+    // 광고 표시 중에는 BGM pause, 종료 시 resume (음소거 상태면 그대로 유지)
+    const unsubAdStart = gameBus.on('ad-show-start', () => {
+      this.sound.get('bgm-menu')?.pause();
+    });
+    const unsubAdEnd = gameBus.on('ad-show-end', () => {
+      if (storage.getBool('bgmMuted')) return;
+      this.sound.get('bgm-menu')?.resume();
+    });
+
     // 씬 전환 시 정리
     this.events.on('shutdown', () => {
       unsubStart();
       unsubPlaySfx();
       unsubToggleBgm();
+      unsubAdStart();
+      unsubAdEnd();
     });
   }
 }

@@ -19,3 +19,4 @@ games/game01/android/.wrangler/
 
 # 토스 인앱 빌드 결과물
 *.ait
+.wrangler/

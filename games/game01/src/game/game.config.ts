@@ -12,11 +12,19 @@ export const gameConfig = {
   /** Google Play Games 리더보드 ID */
   gpgsLeaderboardId: 'CgkIqPj85N0LEAIQAA',
 
-  /** AdMob 보상형 광고 단위 ID */
-  admobRewardedAdUnitId: 'ca-app-pub-3788530115276232/7954231034',
+  /** AdMob 보상형 광고 단위 ID (리워드 타입별) */
+  admobAdUnitIds: {
+    revive: 'ca-app-pub-3788530115276232/7954231034',
+    gem:    'ca-app-pub-3788530115276232/7954231034',
+    coin:   'ca-app-pub-3788530115276232/7954231034',
+  },
 
-  /** 토스 리워드 광고 그룹 ID (콘솔에서 발급) */
-  tossAdGroupId: 'ait.v2.live.6f19e5acfea94336',
+  /** 토스 보상형 광고 그룹 ID (콘솔에서 리워드 타입별 발급) */
+  tossAdGroupIds: {
+    revive: 'ait.v2.live.ee6fbe56b6d94778',
+    gem:    'ait.v2.live.b656de3993f1428b',
+    coin:   'ait.v2.live.385454088e194ab5',
+  },
 
   /** 토스 인앱결제 상품 SKU (콘솔에서 등록) */
   tossIap: {

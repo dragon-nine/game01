@@ -55,7 +55,7 @@ export function GameContainer() {
       import('../../game/services/toss-ad-provider').then(async ({ TossAdProvider }) => {
         const provider = new TossAdProvider();
         adService.setProvider(provider);
-        await provider.preload(); // 광고 로드 완료까지 대기
+        await provider.preload('revive'); // 부활 광고 우선 로드
       }).catch((e) => console.warn('[TossAd] 초기화 실패:', e));
       restoreAdRemove().catch((e) => console.warn('[Billing] 복원 실패:', e));
     } else if (import.meta.env.DEV) {
@@ -63,7 +63,7 @@ export function GameContainer() {
       import('../../game/services/mock-ad-provider').then(({ MockAdProvider }) => {
         const provider = new MockAdProvider();
         adService.setProvider(provider);
-        provider.preload();
+        provider.preload('revive');
         console.log('[Mock] 광고 프로바이더 등록됨 (DEV only)');
       });
     }

@@ -60,7 +60,7 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     const bgm = lifecycleDeps.getBgm();
     bgm?.pause();
 
-    adService.showRewarded((result) => {
+    adService.showRewarded('revive', (result) => {
       // 광고 종료 후 게임 시뮬레이션 재개
       deps.scene.scene.resume();
       if (bgm) (bgm as Phaser.Sound.WebAudioSound).resume();

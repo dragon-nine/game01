@@ -54,6 +54,9 @@ type EventMap = {
   'mock-ad-show': void;
   // Toast 알림 (React 오버레이로 렌더)
   'toast': string;
+  // 광고 표시 라이프사이클 — BGM 덕킹 등 사운드 제어용
+  'ad-show-start': void;
+  'ad-show-end': void;
   // Debug
   'toggle-godmode': void;
 };
