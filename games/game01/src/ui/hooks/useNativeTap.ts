@@ -25,7 +25,13 @@ interface Options {
 }
 
 const SCROLL_THRESHOLD_PX = 8;
-const DEDUP_WINDOW_MS = 500;
+/**
+ * 중복 발사 억제 시간창.
+ * Android WebView(특히 갤럭시 Toss 인앱)에서 touchstart → pointerdown(touch) →
+ * pointerup → pointerdown(mouse-synth) → mousedown → click 전체 시퀀스가
+ * 느리게 깔리는 경우가 있어 넉넉하게 잡음.
+ */
+const DEDUP_WINDOW_MS = 700;
 
 export function useNativeTap(onTap: () => void, options: Options = {}) {
   const onTapRef = useRef(onTap);
@@ -107,17 +113,30 @@ function attachTap(el: HTMLElement, onTap: () => void, scrollSafe: boolean): () 
     };
   }
 
-  // 기본 모드 (게임 인풋): pointerdown에서 즉시 발사 — 최저 지연.
+  // 기본 모드 (게임 인풋): 가능한 모든 입력 경로를 listen하되 단일 dedup으로 1회만 발사.
+  // Android 계열 WebView는 브라우저마다 어떤 이벤트가 먼저 오는지 일관성이 없어,
+  // 특정 경로(예: pointerdown)만 신뢰하면 누락되거나 중복이 새는 경우가 발생.
+  // 모든 경로를 수용 + timestamp 시간창으로 중복 억제가 가장 견고.
+  const onTouchStart = (e: TouchEvent) => {
+    // 후속 합성 mouse/click 이벤트를 구조적으로 억제 — dedup 부담을 줄임
+    if (e.cancelable) e.preventDefault();
+    fire();
+  };
   const onPointerDown = (e: PointerEvent) => {
     if (!e.isPrimary) return;
     fire();
   };
+  const onMouseDown = () => fire();
 
+  el.addEventListener('touchstart', onTouchStart, { passive: false });
   el.addEventListener('pointerdown', onPointerDown);
+  el.addEventListener('mousedown', onMouseDown);
   el.addEventListener('click', onClick);
 
   return () => {
+    el.removeEventListener('touchstart', onTouchStart);
     el.removeEventListener('pointerdown', onPointerDown);
+    el.removeEventListener('mousedown', onMouseDown);
     el.removeEventListener('click', onClick);
   };
 }
