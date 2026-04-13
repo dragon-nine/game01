@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.dragonnine.game01',
-  appName: '직장인 잔혹시',
+  appName: '직장인 잔혹사',
   webDir: 'dist',
   android: {
     backgroundColor: '#0a0a14',

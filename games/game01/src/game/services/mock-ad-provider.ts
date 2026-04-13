@@ -1,7 +1,7 @@
 /**
  * Mock 광고 프로바이더 — DEV 전용
  *
- * 일반 브라우저에서 부활 광고 흐름을 테스트하기 위한 더미 프로바이더.
+ * 일반 브라우저에서 보상형 광고 흐름을 테스트하기 위한 더미 프로바이더.
  * production 빌드에는 포함되지 않음 (GameContainer에서 import.meta.env.DEV 분기로 등록).
  *
  * 동작:
@@ -13,7 +13,7 @@
  * 이 모듈은 Promise resolver만 보관하고 gameBus 이벤트로 표시 요청.
  */
 
-import type { AdProvider, AdResult } from './ad-service';
+import type { AdProvider, AdResult, AdRewardType } from './ad-service';
 import { gameBus } from '../event-bus';
 
 let pendingResolve: ((result: AdResult) => void) | null = null;
@@ -28,26 +28,26 @@ export function resolveMockAd(result: AdResult): void {
 }
 
 export class MockAdProvider implements AdProvider {
-  private ready = false;
+  private readyMap = new Map<AdRewardType, boolean>();
 
-  async preload(): Promise<void> {
+  async preload(type: AdRewardType): Promise<void> {
     await new Promise((r) => setTimeout(r, 100));
-    this.ready = true;
+    this.readyMap.set(type, true);
   }
 
-  isReady(): boolean {
-    return this.ready;
+  isReady(type: AdRewardType): boolean {
+    return this.readyMap.get(type) === true;
   }
 
-  async showRewarded(): Promise<AdResult> {
+  async showRewarded(type: AdRewardType): Promise<AdResult> {
     // 가짜 광고 로딩 시간 — Bug 1 (delta spike) 재현용
     await new Promise((r) => setTimeout(r, 500));
 
     return new Promise<AdResult>((resolve) => {
       pendingResolve = (result) => {
-        this.ready = false;
+        this.readyMap.set(type, false);
         // 다음 광고 미리 로드
-        this.preload();
+        this.preload(type);
         resolve(result);
       };
       gameBus.emit('mock-ad-show', undefined);

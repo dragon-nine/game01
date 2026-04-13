@@ -7,12 +7,14 @@ interface Props {
   label: string;
   scale: number;
   onClick: () => void;
+  /** 인트로 fade-in 애니메이션 재생 여부. 기본 true. 탭 전환 시 false 권장. */
+  animate?: boolean;
 }
 
-export function StartButton({ label, scale, onClick }: Props) {
+export function StartButton({ label, scale, onClick, animate = true }: Props) {
   return (
     <div
-      className={styles.fadeInThenPulse}
+      className={animate ? styles.fadeInThenPulse : styles.pulseOnly}
       style={{ width: 214 * scale, position: 'relative' }}
     >
       <TapButton

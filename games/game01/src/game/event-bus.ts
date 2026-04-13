@@ -3,12 +3,23 @@
  * Phaser 씬에서 emit → React 컴포넌트에서 subscribe
  */
 
-export type GameScreen = 'loading' | 'main' | 'story' | 'playing' | 'paused' | 'settings' | 'game-over' | 'revive-ad';
+export type GameScreen =
+  | 'loading'
+  | 'main'
+  | 'story'
+  | 'playing'
+  | 'paused'
+  | 'settings'
+  | 'revive-prompt' // 부활 옵션 모달 (게임오버 직후)
+  | 'game-over'      // 보상/종료 화면
+  | 'revive-ad';     // 부활 광고 시청 중
 
 export interface GameOverData {
   score: number;
   bestScore: number;
   canRevive: boolean;
+  /** 이번 판에서 획득한 코인 수 */
+  coinsEarned: number;
 }
 
 type EventMap = {
@@ -17,7 +28,8 @@ type EventMap = {
   // React → Phaser actions
   'start-game': void;
   'resume-game': void;
-  'revive': void;
+  'revive': void;            // 광고 시청 → 부활
+  'revive-with-gems': void;  // 보석 차감 → 부활 (광고 X)
   'go-home': void;
   'toggle-bgm': void;
   'toggle-sfx': void;
@@ -25,6 +37,7 @@ type EventMap = {
   // Gameplay HUD: Phaser → React
   'score-update': number;
   'timer-update': number;  // 0~1 비율
+  'coin-update': number;   // 이번 판 획득 코인 수 (누적값 아님)
   // Gameplay HUD: React → Phaser
   'action-switch': void;
   'action-forward': void;
@@ -41,6 +54,9 @@ type EventMap = {
   'mock-ad-show': void;
   // Toast 알림 (React 오버레이로 렌더)
   'toast': string;
+  // 광고 표시 라이프사이클 — BGM 덕킹 등 사운드 제어용
+  'ad-show-start': void;
+  'ad-show-end': void;
   // Debug
   'toggle-godmode': void;
 };

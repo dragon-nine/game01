@@ -1,164 +1,49 @@
+import { useEffect, useState } from 'react';
 import { gameBus } from '../../game/event-bus';
-import { storage } from '../../game/services/storage';
+import { logScreen } from '../../game/services/analytics';
+import { adService } from '../../game/services/ad-service';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
-import { TapButton } from '../components/TapButton';
-import { StartButton } from '../components/StartButton';
-import { Text } from '../components/Text';
+import { BottomTabBar, type HomeTab as TabKey } from './home/BottomTabBar';
+import { HomeTab } from './home/HomeTab';
+import { ShopTab } from './home/ShopTab';
+import { CharactersTab } from './home/CharactersTab';
 import styles from './overlay.module.css';
-
-const BASE = import.meta.env.BASE_URL || '/';
 
 export function MainScreen() {
   const scale = useResponsiveScale();
-  const tutorialDone = storage.getBool('tutorialDone');
-  const bestScore = storage.getBestScore();
+  const [tab, setTab] = useState<TabKey>('home');
 
-  const handleStart = () => {
+  // 홈 탭 진입 시 현재 탭 화면 추적 (GameContainer의 screen_main 이후에 로깅)
+  useEffect(() => {
+    logScreen(`screen_main_${tab}`);
+  }, [tab]);
+
+  const handleTabChange = (next: TabKey) => {
+    if (next === tab) return;
     gameBus.emit('play-sfx', 'sfx-click');
-    if (!tutorialDone) {
-      gameBus.emit('screen-change', 'story');
-    } else {
-      gameBus.emit('start-game', undefined);
+    // 상점 진입 시 무료 코인/보석 광고 미리 로드 — 카드 탭 시 즉시 표시
+    if (next === 'shop') {
+      adService.preload('gem');
+      adService.preload('coin');
     }
-  };
-
-  const handleSettings = () => {
-    gameBus.emit('play-sfx', 'sfx-click');
-    gameBus.emit('screen-change', 'settings');
+    setTab(next);
   };
 
   return (
-    <div className={styles.overlay}>
-      {/* 배경 */}
-      <img
-        src={`${BASE}main-screen/main-bg.png`}
-        alt=""
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          pointerEvents: 'none',
-        }}
-      />
+    <div
+      className={styles.overlay}
+      style={{
+        // 페이지 베이스 — 홈 탭은 자체 배경을 덮어씌움
+        background: '#0a0a14',
+      }}
+    >
+      {/* ── 탭 컨텐츠 (배경 + 탭별 헤더 포함) ── */}
+      {tab === 'home' && <HomeTab scale={scale} />}
+      {tab === 'shop' && <ShopTab scale={scale} />}
+      {tab === 'characters' && <CharactersTab scale={scale} />}
 
-      {/* ── 상단 영역: 아이콘 버튼들 ── */}
-      <div
-        className={styles.fadeInUp}
-        style={{
-          position: 'absolute',
-          top: `calc(var(--sat, 0px) + ${6 * scale}px)`,
-          left: 0,
-          right: 0,
-          padding: `0 ${16 * scale}px`,
-          boxSizing: 'border-box',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          zIndex: 10,
-          animationDelay: '1.2s',
-        }}
-      >
-        {/* 광고제거 */}
-        <TapButton
-          onTap={() => gameBus.emit('show-ad-remove', undefined)}
-          style={{
-            width: 42 * scale, height: 42 * scale,
-            borderRadius: 999,
-            background: 'linear-gradient(135deg, #f0a030, #ffd060)',
-            border: `${2 * scale}px solid #000`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none">
-            {/* AD 텍스트 */}
-            <text x="12" y="17" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Arial, sans-serif" letterSpacing="1" stroke="#000" strokeWidth="3" fill="#fff" paintOrder="stroke fill">AD</text>
-            {/* 사선 (\) */}
-            <line x1="4" y1="4" x2="20" y2="20" stroke="#000" strokeWidth="3.5" strokeLinecap="round" />
-            <line x1="4" y1="4" x2="20" y2="20" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </TapButton>
-
-        {/* 우측: ⚙ */}
-        <div style={{ display: 'flex', gap: 6 * scale }}>
-          <TapButton
-            onTap={handleSettings}
-            style={{
-              width: 42 * scale, height: 42 * scale,
-              borderRadius: 999,
-              background: '#354a59',
-              border: `${2 * scale}px solid #000`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-            </svg>
-          </TapButton>
-        </div>
-      </div>
-
-      {/* ── 타이틀 이미지: 상단에서 15% 위치 ── */}
-      <div
-        className={`${styles.fadeInUp}`}
-        style={{
-          position: 'absolute',
-          top: '15%',
-          left: 0, right: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          animationDelay: '0.2s',
-        }}
-      >
-        <img
-          src={`${BASE}main-screen/main-text.png`}
-          alt="직장인 잔혹사"
-          draggable={false}
-          style={{ width: 331 * scale, display: 'block', objectFit: 'contain' }}
-        />
-      </div>
-
-      {/* ── 하단 영역: 최고기록 + 시작 버튼 ──
-          타이틀(top:15%) 아래부터 화면 끝까지의 영역에서 수직 중앙 정렬.
-          토끼(배경 이미지)와 충분한 시각적 거리 확보. */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '52%',
-          left: 0, right: 0,
-          bottom: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingBottom: `calc(var(--sab, 0px) + ${40 * scale}px)`,
-          gap: 16 * scale,
-          pointerEvents: 'none',
-        }}
-      >
-        {/* 최고기록 */}
-        <Text
-          size={22 * scale}
-          weight={900}
-          align="center"
-          className={styles.fadeInUp}
-          style={{
-            animationDelay: '0.6s',
-            WebkitTextStroke: `${3 * scale}px #000`,
-            paintOrder: 'stroke fill',
-          }}
-        >
-          최고기록 {bestScore}
-        </Text>
-
-        {/* 시작 버튼 — 래퍼는 pointerEvents none이라 버튼만 활성화 */}
-        <div style={{ pointerEvents: 'auto' }}>
-          <StartButton label="시작하기" scale={scale} onClick={handleStart} />
-        </div>
-      </div>
-
+      {/* ── 하단 탭바 ── */}
+      <BottomTabBar active={tab} onChange={handleTabChange} scale={scale} />
     </div>
   );
 }

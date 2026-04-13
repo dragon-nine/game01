@@ -1,72 +1,144 @@
 import { useCallback, useRef } from 'react';
 
 /**
- * 네이티브 DOM 이벤트로 안정적인 탭 핸들러 등록.
+ * 모든 입력 장치(터치/마우스/펜)에서 정확히 한 번만 onTap을 발사하는 훅.
  *
- * iOS WebKit의 onPointerDown 누락 문제를 우회하기 위한 훅.
- * 빠른 연속 입력이 중요한 게임 버튼에 사용.
+ * ## 정책
  *
- * 동작:
- * - touchstart {passive: false} + preventDefault → 후속 mouse 이벤트 차단 (중복 실행 방지)
- * - mousedown → 데스크탑(마우스) 호환
- * - React 합성 이벤트 우회 → 더 빠르고 누락 없음
+ * 기본 모드는 **`click` 이벤트 + `touch-action: manipulation`** (W3C/Patrick Lauke 권장).
+ * 브라우저가 touch/mouse/pen을 통합해 한 제스처당 정확히 1회 click을 발사 보장.
+ * 우리가 직접 디덥할 필요 없음 — Galaxy WebView가 같은 제스처에 pointerdown을 2번
+ * 쏘는 케이스도 click은 1회만 발사됨.
  *
- * 사용:
- *   const tapRef = useNativeTap(() => { ... });
- *   return <div ref={tapRef}>...</div>;
+ * ## 모드
  *
- * callback ref 패턴 사용 — 엘리먼트가 마운트될 때 자동으로 리스너 등록.
- * useEffect 기반 ref와 달리 조건부 렌더링과 잘 동작함.
- *
- * 출처:
- * - https://github.com/facebook/react/issues/12901 (React onPointerDown iOS 누락)
- * - https://bugs.webkit.org/show_bug.cgi?id=211521 (WebKit 회귀)
- * - https://patrickhlauke.github.io/getting-touchy-presentation/ (모바일 입력 권장 패턴)
+ * - **default (UI 버튼 전부)**: `click` — 메인/대시보드/모달/광고/공유/설정/게임오버 등
+ *   탭 후 컴포넌트 트리 변화가 일어나도 안전.
+ * - **rapid (게임 인풋)**: `pointerdown` 즉시 발사 + 50ms 디덥. forward/switch처럼
+ *   즉시 반응이 필요하고 트리 변화가 없는 인풋용.
+ * - **scrollSafe**: `pointerup` + 이동거리 검사 + 100ms 디덥. 스크롤 컨테이너 내부 버튼.
  */
-export function useNativeTap(onTap: () => void) {
+interface Options {
+  /**
+   * 스크롤 가능한 컨테이너(상점/리스트) 안의 버튼이면 true.
+   * `pointerup`에서 발사 + 이동 거리 검사 → 스크롤과 탭 구분.
+   */
+  scrollSafe?: boolean;
+  /**
+   * 게임 인풋(forward/switch)처럼 즉시 반응 + 빠른 연타가 필요할 때 true.
+   * `pointerdown`에서 즉시 발사 + 50ms 디덥.
+   */
+  rapid?: boolean;
+}
+
+const SCROLL_THRESHOLD_PX = 8;
+const SCROLL_DEDUP_MS = 100;
+const RAPID_DEDUP_MS = 50;
+
+export function useNativeTap(onTap: () => void, options: Options = {}) {
   const onTapRef = useRef(onTap);
   onTapRef.current = onTap;
+  const scrollSafe = options.scrollSafe ?? false;
+  const rapid = options.rapid ?? false;
 
   const cleanupRef = useRef<(() => void) | null>(null);
 
   return useCallback((el: HTMLElement | null) => {
-    // 이전 엘리먼트 정리
     cleanupRef.current?.();
     cleanupRef.current = null;
-
     if (!el) return;
+    cleanupRef.current = attachTap(el, () => onTapRef.current(), { scrollSafe, rapid });
+  }, [scrollSafe, rapid]);
+}
 
-    // 모든 touchstart/mousedown을 즉시 처리 (ghost filter 없음)
-    // 사용자의 빠른 연타를 절대 누락하지 않음
-    let lastPrimaryFire = 0;
-    const CLICK_SUPPRESS_MS = 500;
+function attachTap(
+  el: HTMLElement,
+  onTap: () => void,
+  mode: { scrollSafe: boolean; rapid: boolean },
+): () => void {
+  if (mode.scrollSafe) return attachScrollSafe(el, onTap);
+  if (mode.rapid) return attachRapid(el, onTap);
+  return attachClick(el, onTap);
+}
 
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      lastPrimaryFire = e.timeStamp;
-      onTapRef.current();
-    };
+function attachClick(el: HTMLElement, onTap: () => void): () => void {
+  const handler = () => onTap();
+  el.addEventListener('click', handler);
+  return () => el.removeEventListener('click', handler);
+}
 
-    const onMouseDown = () => {
-      lastPrimaryFire = performance.now();
-      onTapRef.current();
-    };
+function attachRapid(el: HTMLElement, onTap: () => void): () => void {
+  // 게임 인풋은 본질적으로 멀티터치 — 양손 엄지로 교대 탭 시
+  // 두 손가락이 동시에 화면에 있는 순간의 두 번째 터치는 isPrimary=false라
+  // 드롭됨. dedup은 같은 손가락의 같은 버튼 연타만 막도록 pointerId별로 관리.
+  const lastFireByPointer = new Map<number, number>();
+  const onPointerDown = (e: PointerEvent) => {
+    const now = performance.now();
+    const last = lastFireByPointer.get(e.pointerId) ?? -Infinity;
+    if (now - last < RAPID_DEDUP_MS) return;
+    lastFireByPointer.set(e.pointerId, now);
+    onTap();
+  };
+  // pointerId 누수 방지 — pointerup/cancel 시 정리
+  const onPointerEnd = (e: PointerEvent) => {
+    lastFireByPointer.delete(e.pointerId);
+  };
+  el.addEventListener('pointerdown', onPointerDown);
+  el.addEventListener('pointerup', onPointerEnd);
+  el.addEventListener('pointercancel', onPointerEnd);
+  return () => {
+    el.removeEventListener('pointerdown', onPointerDown);
+    el.removeEventListener('pointerup', onPointerEnd);
+    el.removeEventListener('pointercancel', onPointerEnd);
+  };
+}
 
-    // click은 touchstart/mousedown 직후 자동 발생하는 중복 차단용
-    const onClick = () => {
-      const now = performance.now();
-      if (now - lastPrimaryFire < CLICK_SUPPRESS_MS) return;
-      onTapRef.current();
-    };
+function attachScrollSafe(el: HTMLElement, onTap: () => void): () => void {
+  let lastFireAt = -Infinity;
+  let startX = 0;
+  let startY = 0;
+  let moved = false;
+  let tracking = false;
 
-    el.addEventListener('touchstart', onTouchStart, { passive: false });
-    el.addEventListener('mousedown', onMouseDown);
-    el.addEventListener('click', onClick);
+  const onPointerDown = (e: PointerEvent) => {
+    if (!e.isPrimary) return;
+    tracking = true;
+    moved = false;
+    startX = e.clientX;
+    startY = e.clientY;
+  };
 
-    cleanupRef.current = () => {
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('mousedown', onMouseDown);
-      el.removeEventListener('click', onClick);
-    };
-  }, []);
+  const onPointerMove = (e: PointerEvent) => {
+    if (!tracking || moved) return;
+    if (
+      Math.abs(e.clientX - startX) > SCROLL_THRESHOLD_PX ||
+      Math.abs(e.clientY - startY) > SCROLL_THRESHOLD_PX
+    ) {
+      moved = true;
+    }
+  };
+
+  const onPointerUp = () => {
+    if (!tracking) return;
+    tracking = false;
+    if (moved) return;
+    const now = performance.now();
+    if (now - lastFireAt < SCROLL_DEDUP_MS) return;
+    lastFireAt = now;
+    onTap();
+  };
+
+  const onPointerCancel = () => { tracking = false; };
+
+  el.addEventListener('pointerdown', onPointerDown);
+  el.addEventListener('pointermove', onPointerMove);
+  el.addEventListener('pointerup', onPointerUp);
+  el.addEventListener('pointercancel', onPointerCancel);
+
+  return () => {
+    el.removeEventListener('pointerdown', onPointerDown);
+    el.removeEventListener('pointermove', onPointerMove);
+    el.removeEventListener('pointerup', onPointerUp);
+    el.removeEventListener('pointercancel', onPointerCancel);
+  };
 }

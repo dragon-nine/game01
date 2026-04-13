@@ -4,7 +4,14 @@ import { createGameConfig } from '../../game/config';
 import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
 import { loadQuotes } from '../../game/game-over-quotes';
 import { adService } from '../../game/services/ad-service';
+import { logScreen } from '../../game/services/analytics';
 import { isGoogle, isTossNative } from '../../game/platform';
+// billing/leaderboard 는 다른 컴포넌트에서도 정적으로 import 됨 → 동적 import는
+// 코드 스플릿 효과가 없으므로 정적 import로 통일 (Vite 경고 해소).
+// 두 모듈 모두 ~2KB 얇은 래퍼이고, 무거운 SDK(@apps-in-toss/web-framework, play-games)는
+// 모듈 내부에서 별도로 동적 import 하므로 메인 번들 영향 거의 없음.
+import { restoreAdRemove } from '../../game/services/billing';
+import { initGPGS } from '../../game/services/leaderboard';
 import { MainScreen } from '../overlays/MainScreen';
 import { SettingsOverlay } from '../overlays/SettingsOverlay';
 import { PauseOverlay } from '../overlays/PauseOverlay';
@@ -14,6 +21,7 @@ import { ChallengeOverlay } from '../overlays/ChallengeOverlay';
 import { AdRemoveOverlay } from '../overlays/AdRemoveOverlay';
 import { StoryScreen } from '../overlays/StoryScreen';
 import { ReviveFailModal } from '../overlays/ReviveFailModal';
+import { ReviveScreen } from '../overlays/ReviveScreen';
 import { MockAdModal } from '../overlays/MockAdModal';
 import { Toast } from './Toast';
 
@@ -33,33 +41,29 @@ export function GameContainer() {
     loadQuotes(); // R2에서 게임오버 멘트 미리 로드
 
     // 플랫폼별 초기화
+    // ※ admob/toss-ad/mock-ad provider 는 플랫폼 전용이라 동적 import 유지 (실제 코드 스플릿됨)
+    // ※ billing.restoreAdRemove / leaderboard.initGPGS 는 정적 import + 직접 호출
     if (isGoogle()) {
       // Google: AdMob + GPGS + 구매복원
       import('../../game/services/admob-provider').then(({ AdMobProvider }) => {
         adService.setProvider(new AdMobProvider());
       }).catch((e) => console.warn('[AdMob] 초기화 실패:', e));
-      import('../../game/services/leaderboard').then(({ initGPGS }) => {
-        initGPGS();
-      }).catch((e) => console.warn('[GPGS] 초기화 실패:', e));
-      import('../../game/services/billing').then(({ restoreAdRemove }) => {
-        restoreAdRemove();
-      }).catch((e) => console.warn('[Billing] 복원 실패:', e));
+      initGPGS().catch((e) => console.warn('[GPGS] 초기화 실패:', e));
+      restoreAdRemove().catch((e) => console.warn('[Billing] 복원 실패:', e));
     } else if (isTossNative()) {
       // 토스 인앱 (실제 SDK 호출 가능): 광고 프로바이더 + 구매복원
       import('../../game/services/toss-ad-provider').then(async ({ TossAdProvider }) => {
         const provider = new TossAdProvider();
         adService.setProvider(provider);
-        await provider.preload(); // 광고 로드 완료까지 대기
+        await provider.preload('revive'); // 부활 광고 우선 로드
       }).catch((e) => console.warn('[TossAd] 초기화 실패:', e));
-      import('../../game/services/billing').then(({ restoreAdRemove }) => {
-        restoreAdRemove();
-      }).catch((e) => console.warn('[Billing] 복원 실패:', e));
+      restoreAdRemove().catch((e) => console.warn('[Billing] 복원 실패:', e));
     } else if (import.meta.env.DEV) {
       // 일반 브라우저 + DEV: mock 광고 프로바이더 (테스트용)
       import('../../game/services/mock-ad-provider').then(({ MockAdProvider }) => {
         const provider = new MockAdProvider();
         adService.setProvider(provider);
-        provider.preload();
+        provider.preload('revive');
         console.log('[Mock] 광고 프로바이더 등록됨 (DEV only)');
       });
     }
@@ -76,12 +80,15 @@ export function GameContainer() {
   useEffect(() => {
     const unsub1 = gameBus.on('screen-change', (s) => {
       setScreen(s);
+      // Toss/Firebase 분석 — 화면 전환 추적 (log_name은 snake_case + 'screen_' 접두)
+      logScreen(`screen_${s.replace(/-/g, '_')}`);
       // 게임오버 화면을 벗어나면 부활 실패 모달도 정리
       if (s !== 'game-over') setReviveFailReason(null);
     });
     const unsub2 = gameBus.on('game-over-data', (data) => {
       setGameOverData(data);
-      setScreen('game-over');
+      // 부활 가능하면 부활 모달 먼저, 아니면 바로 보상/종료 화면
+      setScreen(data.canRevive ? 'revive-prompt' : 'game-over');
     });
     const unsub3 = gameBus.on('show-challenge', (score) => setChallengeScore(score));
     const unsub4 = gameBus.on('show-ad-remove', () => setShowAdRemove(true));
@@ -106,6 +113,9 @@ export function GameContainer() {
       {screen === 'settings' && <SettingsOverlay />}
       {(screen === 'playing' || screen === 'paused') && <GameplayHUD />}
       {screen === 'paused' && <PauseOverlay />}
+      {screen === 'revive-prompt' && gameOverData && (
+        <ReviveScreen data={gameOverData} onSkip={() => setScreen('game-over')} />
+      )}
       {(screen === 'game-over' || screen === 'revive-ad') && gameOverData && <GameOverScreen data={gameOverData} />}
       {challengeScore !== null && (
         <ChallengeOverlay score={challengeScore} onClose={() => setChallengeScore(null)} />

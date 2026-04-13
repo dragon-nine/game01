@@ -55,7 +55,6 @@ export function revive(deps: LifecycleDeps) {
   deps.setHasRevived(true);
   deps.setGameOver(false);
   deps.setIsFalling(false);
-  deps.setComboCount(0);
   deps.setJustSwitched(false);
 
   deps.player.setHurt(false);
@@ -90,7 +89,7 @@ export function revive(deps: LifecycleDeps) {
   });
 
   logEvent('revive_complete', { score: deps.getScore() });
-  deps.playSfx('sfx-combo', 0.7);
+  deps.playSfx('sfx-coin', 0.7);
   deps.showPopup('부활!', '#44ff44');
 }
 
@@ -113,14 +112,17 @@ export function endGame(deps: LifecycleDeps) {
 
   logEvent('game_over', {
     score: deps.getScore(),
-    best_combo: deps.getBestCombo(),
     revived: deps.getHasRevived(),
   });
   submitLeaderboardScore(deps.getScore());
 
   const bestScore = storage.updateBestScore(deps.getScore());
+  storage.recordPlayScore(deps.getScore());
 
   gameBus.emit('game-over-data', {
-    score: deps.getScore(), bestScore, canRevive,
+    score: deps.getScore(),
+    bestScore,
+    canRevive,
+    coinsEarned: deps.getCoinsEarnedThisGame(),
   });
 }

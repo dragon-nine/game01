@@ -6,9 +6,10 @@ import {
 import { Road } from '../Road';
 import { Player } from '../Player';
 import { HUD } from '../HUD';
-import { logEvent, logScreen } from '../services/analytics';
+import { logEvent } from '../services/analytics';
 import { adService } from '../services/ad-service';
 import { gameBus } from '../event-bus';
+import { hudState } from '../hud-state';
 import { storage } from '../services/storage';
 import { BackgroundManager } from '../BackgroundManager';
 import {
@@ -31,12 +32,11 @@ export class CommuteScene extends Phaser.Scene {
 
   private currentRowIdx = 0;
   private score = 0;
+  private coinsEarnedThisGame = 0;
   private gameOver = false;
-  private get godMode() { return false; }
+  private get godMode() { return storage.getBool('godMode'); }
   private guideCount = 0;
   private isFalling = false;
-  private comboCount = 0;
-  private bestCombo = 0;
   private justSwitched = false;
   private gameStarted = false;
   private hasRevived = false;
@@ -54,11 +54,11 @@ export class CommuteScene extends Phaser.Scene {
 
   init() {
     this.score = 0;
+    this.coinsEarnedThisGame = 0;
+    hudState.reset();
     this.gameOver = false;
     this.currentRowIdx = 0;
     this.isFalling = false;
-    this.comboCount = 0;
-    this.bestCombo = 0;
     this.justSwitched = false;
     this.gameStarted = false;
     this.hasRevived = false;
@@ -90,7 +90,8 @@ export class CommuteScene extends Phaser.Scene {
     this.road.getContainer().setX(-(this.viewLeft * this.laneW));
 
     const playerScreenX = laneScreenX(this.movementDeps(), startLane);
-    this.player = new Player(this, this.laneW, playerScreenX, playerScreenY, startLane);
+    const characterId = storage.getSelectedCharacter();
+    this.player = new Player(this, this.laneW, playerScreenX, playerScreenY, startLane, characterId);
 
     this.hud = new HUD(this, () => onDeath(this.lifecycleDeps()));
     this.hud.create();
@@ -111,7 +112,9 @@ export class CommuteScene extends Phaser.Scene {
     // 그 다음 React에 playing 화면 표시
     gameBus.emit('screen-change', 'playing');
 
-    adService.preload();
+    adService.preload('revive');
+    // 코인 광고는 게임오버 "코인 2배" 버튼에서 사용 — 게임플레이 동안 미리 로드
+    adService.preload('coin');
   }
 
   update(_time: number, delta: number) {
@@ -128,8 +131,8 @@ export class CommuteScene extends Phaser.Scene {
 
     this.bgm = this.sound.get('bgm-menu') ?? undefined;
 
-    logScreen('screen_game');
     logEvent('game_start');
+    storage.recordPlayStart();
     this.guideCount = 0;
 
     const tutorialDone = storage.getBool('tutorialDone');
@@ -186,10 +189,6 @@ export class CommuteScene extends Phaser.Scene {
       setScore: (s) => { this.score = s; },
       getJustSwitched: () => this.justSwitched,
       setJustSwitched: (v) => { this.justSwitched = v; },
-      getComboCount: () => this.comboCount,
-      setComboCount: (c) => { this.comboCount = c; },
-      getBestCombo: () => this.bestCombo,
-      setBestCombo: (b) => { this.bestCombo = b; },
       getGodMode: () => this.godMode,
       getIsFalling: () => this.isFalling,
       setIsFalling: (v) => { this.isFalling = v; },
@@ -199,6 +198,12 @@ export class CommuteScene extends Phaser.Scene {
       onForwardCrash: () => onForwardCrash(this.lifecycleDeps()),
       playSfx: (key, vol) => this.playSfx(key, vol),
       vibrate: (p) => this.vibrate(p),
+      getCoinsEarnedThisGame: () => this.coinsEarnedThisGame,
+      incrementCoinsEarnedThisGame: () => {
+        this.coinsEarnedThisGame += 1;
+        hudState.setCoins(this.coinsEarnedThisGame);
+        gameBus.emit('coin-update', this.coinsEarnedThisGame);
+      },
     };
   }
 

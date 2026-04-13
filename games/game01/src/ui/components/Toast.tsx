@@ -61,8 +61,12 @@ export function Toast() {
         transform: `translateX(-50%) translateY(${visible ? 0 : -12}px)`,
         opacity: visible ? 1 : 0,
         transition: `opacity ${FADE_MS}ms ease-out, transform ${FADE_MS}ms ease-out`,
-        // 콘텐츠 기반 너비 + 좌우 여백 안전장치
+        // 너비 — 화면의 70%, 최소 260px 보장
+        width: `min(calc(100vw - ${32 * scale}px), ${320 * scale}px)`,
+        minWidth: 260 * scale,
         maxWidth: `calc(100vw - ${32 * scale}px)`,
+        boxSizing: 'border-box',
+        justifyContent: 'center',
         // 풀 라운드 캡슐 — 버튼(16px)과 차별화
         borderRadius: 9999,
         // 반투명 + blur로 떠 있는 느낌
@@ -77,10 +81,9 @@ export function Toast() {
         pointerEvents: 'none',
         zIndex: 9999,
         // 콘텐츠 정렬
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         gap: 10 * scale,
-        whiteSpace: 'nowrap',
       }}
     >
       {/* 알림 아이콘 — 작은 원 안에 ⓘ */}

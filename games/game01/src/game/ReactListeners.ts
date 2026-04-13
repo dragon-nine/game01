@@ -1,10 +1,13 @@
 import { logEvent, logClick } from './services/analytics';
 import { adService } from './services/ad-service';
+import { isAdRemoved } from './services/billing';
 import { gameBus } from './event-bus';
 import { storage } from './services/storage';
 import { HUD } from './HUD';
 import { isToss, isTossNative } from './platform';
 import { revive as doRevive, type LifecycleDeps } from './GameLifecycle';
+
+const REVIVE_GEM_COST = 2;
 
 export interface ReactListenerDeps {
   scene: Phaser.Scene;
@@ -38,16 +41,26 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     // ad-service 내부에도 dedupe가 있어 2차 가드.
     if (deps.scene.scene.isPaused('CommuteScene')) return;
 
+    const lifecycleDeps = deps.getLifecycleDeps();
+
+    // 부활 광고 제거 구매한 사용자 — 광고 바이패스하고 즉시 부활.
+    // (이 분기는 부활 전용. 상점의 무료 보상 광고는 그대로 표시됨.)
+    if (isAdRemoved()) {
+      logEvent('revive_ad_bypass', { score: deps.getScore() });
+      gameBus.emit('screen-change', 'playing');
+      doRevive(lifecycleDeps);
+      return;
+    }
+
     logEvent('revive_ad_click', { score: deps.getScore() });
     gameBus.emit('screen-change', 'revive-ad');
 
     // 광고 동안 게임 시뮬레이션 정지 (delta 폭주 방지)
     deps.scene.scene.pause();
-    const lifecycleDeps = deps.getLifecycleDeps();
     const bgm = lifecycleDeps.getBgm();
     bgm?.pause();
 
-    adService.showRewarded((result) => {
+    adService.showRewarded('revive', (result) => {
       // 광고 종료 후 게임 시뮬레이션 재개
       deps.scene.scene.resume();
       if (bgm) (bgm as Phaser.Sound.WebAudioSound).resume();
@@ -94,6 +107,19 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     storage.toggleBool('godMode');
   });
 
+  // 보석으로 부활 (광고 X)
+  const unsubReviveGem = gameBus.on('revive-with-gems', () => {
+    const gems = storage.getNum('gems');
+    if (gems < REVIVE_GEM_COST) {
+      gameBus.emit('toast', `보석 ${REVIVE_GEM_COST}개가 필요해요`);
+      return;
+    }
+    storage.addNum('gems', -REVIVE_GEM_COST);
+    logEvent('revive_gem', { score: deps.getScore(), cost: REVIVE_GEM_COST });
+    gameBus.emit('screen-change', 'playing');
+    doRevive(deps.getLifecycleDeps());
+  });
+
   deps.scene.events.on('shutdown', () => {
     // 진행 중인 광고가 있으면 결과 무시 (씬이 사라진 뒤 콜백 발생 방지)
     adService.cancel();
@@ -105,6 +131,7 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     unsubPlaySfx();
     unsubToggleBgm();
     unsubGodMode();
+    unsubReviveGem();
   });
 }
 

@@ -5,14 +5,28 @@ export class Player {
   private scene: Phaser.Scene;
   private sprite: Phaser.GameObjects.Image;
   private rabbitSize: number;
+  private characterId: string;
   currentLane = 0;
 
-  constructor(scene: Phaser.Scene, laneW: number, startX: number, startY: number, startLane: number) {
+  /** 캐릭터별 텍스처 키 */
+  private get keyFront() { return `${this.characterId}-front`; }
+  private get keyBack()  { return `${this.characterId}-back`; }
+  private get keySide()  { return `${this.characterId}-side`; }
+
+  constructor(
+    scene: Phaser.Scene,
+    laneW: number,
+    startX: number,
+    startY: number,
+    startLane: number,
+    characterId = 'rabbit',
+  ) {
     this.scene = scene;
     this.currentLane = startLane;
+    this.characterId = characterId;
 
     this.rabbitSize = laneW * RABBIT_SIZE_RATIO;
-    this.sprite = scene.add.image(startX, startY, 'rabbit-front')
+    this.sprite = scene.add.image(startX, startY, this.keyFront)
       .setDisplaySize(this.rabbitSize, this.rabbitSize)
       .setOrigin(0.5, 0.5)
       .setDepth(150);
@@ -30,7 +44,7 @@ export class Player {
     this.sprite.setAlpha(1);
     this.sprite.setScale(1);
     this.sprite.setAngle(0);
-    this.sprite.setTexture('rabbit-front');
+    this.sprite.setTexture(this.keyFront);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
   }
 
@@ -41,7 +55,7 @@ export class Player {
   /** 전환 성공: 타겟 화면 X로 이동 */
   animateSwitch(targetScreenX: number) {
     const goingRight = targetScreenX > this.sprite.x;
-    this.sprite.setTexture('rabbit-side');
+    this.sprite.setTexture(this.keySide);
     this.sprite.setFlipX(!goingRight);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setAngle(0);
@@ -55,7 +69,7 @@ export class Player {
   /** 전환 실패: 잘못된 레인으로 이동 → 떨어짐 */
   animateCrashSwitch(bumpX: number, onDone: () => void) {
     const goingRight = bumpX > this.sprite.x;
-    this.sprite.setTexture('rabbit-side');
+    this.sprite.setTexture(this.keySide);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(!goingRight);
     this.sprite.setAngle(0);
@@ -74,7 +88,7 @@ export class Player {
 
   /** 전진 성공 */
   animateForward(onDone: () => void) {
-    this.sprite.setTexture('rabbit-back');
+    this.sprite.setTexture(this.keyBack);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
     this.sprite.setAngle(0);
@@ -85,15 +99,15 @@ export class Player {
   faceNextTile(nextLane: number) {
     if (nextLane > this.currentLane) {
       // 다음이 오른쪽
-      this.sprite.setTexture('rabbit-side');
+      this.sprite.setTexture(this.keySide);
       this.sprite.setFlipX(false);
     } else if (nextLane < this.currentLane) {
       // 다음이 왼쪽
-      this.sprite.setTexture('rabbit-side');
+      this.sprite.setTexture(this.keySide);
       this.sprite.setFlipX(true);
     } else {
       // 같은 레인 (직진)
-      this.sprite.setTexture('rabbit-back');
+      this.sprite.setTexture(this.keyBack);
       this.sprite.setFlipX(false);
     }
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
@@ -102,7 +116,7 @@ export class Player {
 
   /** 전진 충돌: 한 칸 전진 → 떨어짐 */
   animateForwardCrash(onDone: () => void) {
-    this.sprite.setTexture('rabbit-back');
+    this.sprite.setTexture(this.keyBack);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setAngle(0);
 
@@ -120,7 +134,7 @@ export class Player {
 
   /** 공통 낙하: 정면 전환 → 후들후들 → 쏙! 빨려들어감 */
   private animateFall(onDone: () => void) {
-    this.sprite.setTexture('rabbit-front');
+    this.sprite.setTexture(this.keyFront);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
     this.sprite.setAngle(0);

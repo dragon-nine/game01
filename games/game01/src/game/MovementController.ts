@@ -22,10 +22,6 @@ export interface MovementDeps {
   setScore(s: number): void;
   getJustSwitched(): boolean;
   setJustSwitched(v: boolean): void;
-  getComboCount(): number;
-  setComboCount(c: number): void;
-  getBestCombo(): number;
-  setBestCombo(b: number): void;
   getGodMode(): boolean;
   getIsFalling(): boolean;
   setIsFalling(v: boolean): void;
@@ -35,6 +31,10 @@ export interface MovementDeps {
   onForwardCrash(): void;
   playSfx(key: string, volume: number): void;
   vibrate(pattern: number | number[]): void;
+  /** 이번 판에서 획득한 코인 수 */
+  getCoinsEarnedThisGame(): number;
+  /** 코인 픽업 시 호출 — 카운터 +1 */
+  incrementCoinsEarnedThisGame(): void;
 }
 
 /* ── View helpers ── */
@@ -88,10 +88,10 @@ export function scrollToCurrentRow(deps: MovementDeps) {
   deps.player.scrollToX(playerScreenX);
 }
 
-/** 가이드 힌트 전송 */
+/** 가이드 힌트 전송 — 튜토리얼 동안만 emit. 완료 후엔 호출 자체 생략(리스너 오버헤드 제거). */
 export function emitGuideHint(deps: MovementDeps) {
   if (storage.getBool('tutorialDone')) {
-    gameBus.emit('guide-hint', null);
+    // 튜토리얼 완료 상태 → 리스너 호출도 하지 않음 (탭 성능 최적화)
     return;
   }
   if (deps.getGuideCount() >= 20) {
@@ -177,19 +177,31 @@ export function moveForward(deps: MovementDeps) {
   deps.hud.addTime();
   deps.setGuideCount(deps.getGuideCount() + 1);
   emitGuideHint(deps);
-  deps.setComboCount(deps.getComboCount() + 1);
-  if (deps.getComboCount() > deps.getBestCombo()) deps.setBestCombo(deps.getComboCount());
 
   while (deps.road.rows.length - deps.getCurrentRowIdx() < 15) {
     deps.road.addNextRow();
   }
 
-  deps.player.animateForward(() => scrollToCurrentRow(deps));
-
-  if (deps.getComboCount() > 0 && deps.getComboCount() % 10 === 0) {
-    deps.playSfx('sfx-combo', 0.7);
-    deps.vibrate([12, 40, 12]);
+  // 코인 수집 — 잔액만 충전. 점수/시간엔 영향 없음.
+  if (nextRow.coin && !nextRow.coinCollected) {
+    nextRow.coinCollected = true;
+    const coin = nextRow.coin;
+    deps.scene.tweens.killTweensOf(coin);
+    deps.playSfx('sfx-coin', 0.5);
+    storage.addNum('coins', 1);
+    deps.incrementCoinsEarnedThisGame();
+    deps.scene.tweens.add({
+      targets: coin,
+      y: coin.y - deps.tileH * 0.6,
+      scale: coin.scale * 1.6,
+      alpha: 0,
+      duration: 320,
+      ease: 'Quad.easeOut',
+      onComplete: () => coin.destroy(),
+    });
   }
+
+  deps.player.animateForward(() => scrollToCurrentRow(deps));
 
   deps.setCurrentRowIdx(deps.road.cleanupOldRows(deps.getCurrentRowIdx()));
 }

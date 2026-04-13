@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { gameBus } from '../event-bus';
-import { logScreen } from '../services/analytics';
 import { storage } from '../services/storage';
 import { gameConfig } from '../game.config';
 
@@ -12,6 +11,9 @@ export class BootScene extends Phaser.Scene {
   preload() {
     for (const [key, path] of gameConfig.assets.images) {
       if (!this.textures.exists(key)) this.load.image(key, path);
+    }
+    for (const [key, path, w, h] of gameConfig.assets.svgs) {
+      if (!this.textures.exists(key)) this.load.svg(key, path, { width: w, height: h });
     }
     for (const [key, path] of gameConfig.assets.audio) {
       this.load.audio(key, path);
@@ -39,8 +41,6 @@ export class BootScene extends Phaser.Scene {
         if (!bgmMuted) menuBgm.play();
       }
     } catch { /* autoplay 차단 — 무시 */ }
-
-    logScreen('screen_boot');
 
     // 중요: 리스너부터 먼저 등록 (메인 화면 표시 전에 준비 완료)
     const unsubStart = gameBus.on('start-game', () => {
@@ -70,11 +70,22 @@ export class BootScene extends Phaser.Scene {
       }
     });
 
+    // 광고 표시 중에는 BGM pause, 종료 시 resume (음소거 상태면 그대로 유지)
+    const unsubAdStart = gameBus.on('ad-show-start', () => {
+      this.sound.get('bgm-menu')?.pause();
+    });
+    const unsubAdEnd = gameBus.on('ad-show-end', () => {
+      if (storage.getBool('bgmMuted')) return;
+      this.sound.get('bgm-menu')?.resume();
+    });
+
     // 씬 전환 시 정리
     this.events.on('shutdown', () => {
       unsubStart();
       unsubPlaySfx();
       unsubToggleBgm();
+      unsubAdStart();
+      unsubAdEnd();
     });
   }
 }

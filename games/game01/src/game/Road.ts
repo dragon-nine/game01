@@ -1,6 +1,17 @@
 import Phaser from 'phaser';
 import type { RoadRow, RoadType } from './constants';
 
+/**
+ * 직선 타일에 코인이 스폰될 확률.
+ * 코인은 점수와 무관 (잔액 충전만).
+ * 평균적으로 직선/턴 타일이 1:1로 나타나고
+ *  - 턴 행: +2점 (스위치+전진)
+ *  - 직선 행: +1점 (전진)
+ *  → 한 쌍당 3점, p코인.
+ *  → p=0.20 이면 1코인/15점 ≈ 300점당 20코인.
+ */
+const COIN_SPAWN_RATE = 0.2;
+
 export class Road {
   private scene: Phaser.Scene;
   private container: Phaser.GameObjects.Container;
@@ -85,6 +96,7 @@ export class Road {
       const old = this.rows.shift()!;
       old.tiles.forEach(t => t.destroy());
       old.decoration?.destroy();
+      old.coin?.destroy();
       currentRowIdx--;
     }
     return currentRowIdx;
@@ -120,9 +132,34 @@ export class Road {
       const road = this.createTile(this.laneWorldX[type], y, 'tile-straight');
       row.tiles.push(road);
       this.container.add(road);
+
+      // 직선 타일에만 코인 스폰 (시작 직후 몇 줄은 스킵)
+      if (this.rows.length > 3 && Math.random() < COIN_SPAWN_RATE) {
+        this.spawnCoin(row, this.laneWorldX[type], y);
+      }
     }
 
     this.rows.push(row);
+  }
+
+  private spawnCoin(row: RoadRow, x: number, y: number) {
+    const size = this.laneW * 0.5;
+    const coin = this.scene.add.image(x, y - this.tileH * 0.05, 'coin')
+      .setDisplaySize(size, size)
+      .setOrigin(0.5, 0.5)
+      .setDepth(8);
+    this.container.add(coin);
+    row.coin = coin;
+
+    // 위아래로 둥둥 뜨는 효과만 (회전 없음)
+    this.scene.tweens.add({
+      targets: coin,
+      y: y - this.tileH * 0.18,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   private createTile(x: number, y: number, key: string): Phaser.GameObjects.Image {

@@ -68,6 +68,11 @@
   animation: fadeInUp 0.8s 0.8s ease-out forwards, pulseScale 1s 2.0s ease-in-out infinite alternate;
 }
 
+/* 인트로 없이 펄스만 — 탭 재진입 시 사용 */
+.pulseOnly {
+  animation: pulseScale 1s ease-in-out infinite alternate;
+}
+
 /* fadeInDelayed 클래스가 먹히지 않으므로 delay는 animation 자체에 포함 */
 
 @keyframes pulseScale {
