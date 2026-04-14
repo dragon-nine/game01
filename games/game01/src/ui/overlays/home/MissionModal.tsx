@@ -83,8 +83,10 @@ export function MissionModal({ onClose }: Props) {
       coin: m.reward.coin ?? 0,
       gem: m.reward.gem ?? 0,
     });
-    const summary = formatReward(m.reward);
-    gameBus.emit('toast', `${summary} 받음!`);
+    const items = [];
+    if (m.reward.coin) items.push({ kind: 'coin' as const, amount: m.reward.coin });
+    if (m.reward.gem) items.push({ kind: 'gem' as const, amount: m.reward.gem });
+    if (items.length) gameBus.emit('show-reward', items);
   };
 
   const activeMissions = tab === 'daily' ? DAILY_MISSIONS : WEEKLY_MISSIONS;

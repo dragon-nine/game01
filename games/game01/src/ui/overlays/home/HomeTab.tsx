@@ -3,6 +3,7 @@ import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { getClaimableMissionCount } from '../../../game/services/missions';
 import { isAdRemoved } from '../../../game/services/billing';
+import { openLeaderboard } from '../../../game/services/leaderboard';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
 import { TapButton } from '../../components/TapButton';
@@ -193,6 +194,24 @@ export function HomeTab({ scale }: Props) {
           onTap={() => {
             gameBus.emit('play-sfx', 'sfx-click');
             setOpenModal('mission');
+          }}
+        />
+        <FloatingMenuButton
+          icon={
+            <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#ffd24a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+              <path d="M7 4h10v5a5 5 0 01-10 0V4z" />
+              <path d="M7 6H4v2a3 3 0 003 3" />
+              <path d="M17 6h3v2a3 3 0 01-3 3" />
+            </svg>
+          }
+          label="랭킹"
+          accent="#ffd24a"
+          scale={scale}
+          onTap={() => {
+            gameBus.emit('play-sfx', 'sfx-click');
+            openLeaderboard();
           }}
         />
       </div>

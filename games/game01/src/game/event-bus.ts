@@ -14,6 +14,13 @@ export type GameScreen =
   | 'game-over'      // 보상/종료 화면
   | 'revive-ad';     // 부활 광고 시청 중
 
+export interface RewardPopupItem {
+  kind: 'coin' | 'gem';
+  amount: number;
+  /** 라벨 (없으면 기본: "코인" / "보석") */
+  label?: string;
+}
+
 export interface GameOverData {
   score: number;
   bestScore: number;
@@ -54,6 +61,8 @@ type EventMap = {
   'mock-ad-show': void;
   // Toast 알림 (React 오버레이로 렌더)
   'toast': string;
+  // 보상 획득 팝업 (코인/보석 등 획득 직후 연출)
+  'show-reward': RewardPopupItem[];
   // 광고 표시 라이프사이클 — BGM 덕킹 등 사운드 제어용
   'ad-show-start': void;
   'ad-show-end': void;

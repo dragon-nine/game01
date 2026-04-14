@@ -53,7 +53,7 @@ export function GameOverScreen({ data }: Props) {
         setBonusClaimed(true);
         storage.addNum('coins', coinsEarned);
         logEvent('reward_2x_claim', { coinsEarned });
-        gameBus.emit('toast', `코인 +${coinsEarned} 추가 획득!`);
+        gameBus.emit('show-reward', [{ kind: 'coin', amount: coinsEarned }]);
       } else if (result.kind === 'skipped') {
         gameBus.emit('toast', '광고를 끝까지 봐주세요');
       } else {

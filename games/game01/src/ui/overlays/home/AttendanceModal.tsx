@@ -70,10 +70,10 @@ export function AttendanceModal({ onClose }: Props) {
     gameBus.emit('play-sfx', 'sfx-click');
     setAttendance(storage.getAttendance());
     setTodayClaimed(true);
-    const summary = reward.rewards
-      .map((r) => `${r.kind === 'coin' ? '코인' : '보석'} +${r.amount}`)
-      .join(', ');
-    gameBus.emit('toast', `${summary} 받음!`);
+    gameBus.emit(
+      'show-reward',
+      reward.rewards.map((r) => ({ kind: r.kind, amount: r.amount })),
+    );
   };
 
   return (
