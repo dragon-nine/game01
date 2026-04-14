@@ -80,7 +80,9 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     logClick('game_home');
     // 진행 중인 광고 결과 콜백을 무효화 (stale 콜백 방지)
     adService.cancel();
-    // pause 상태로 BootScene으로 이동 시 문제 방지
+    // pause 상태 그대로 BootScene으로 전환 시 다음 게임에서 tween/time stale 상태로
+    // 시작되는 현상 방지 — HUD가 관리하는 모든 pause 축을 명시적으로 해제.
+    deps.hud.forceResume();
     if (deps.scene.scene.isPaused('CommuteScene')) {
       deps.scene.scene.resume();
     }
