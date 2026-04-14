@@ -77,6 +77,18 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     });
   });
 
+  const unsubRestart = gameBus.on('restart-game', () => {
+    logClick('game_restart');
+    // go-home와 동일한 정리 + CommuteScene 재시작 (BootScene 경유 X)
+    adService.cancel();
+    deps.hud.forceResume();
+    if (deps.scene.scene.isPaused('CommuteScene')) {
+      deps.scene.scene.resume();
+    }
+    gameBus.emit('screen-change', 'playing');
+    deps.scene.scene.restart();
+  });
+
   const unsubHome = gameBus.on('go-home', () => {
     logClick('game_home');
     // 진행 중인 광고 결과 콜백을 무효화 (stale 콜백 방지)
@@ -129,6 +141,7 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     unsubSwitch();
     unsubForward();
     unsubRevive();
+    unsubRestart();
     unsubHome();
     unsubPause();
     unsubPlaySfx();

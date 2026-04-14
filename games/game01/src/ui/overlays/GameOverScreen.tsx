@@ -71,6 +71,10 @@ export function GameOverScreen({ data }: Props) {
       gameBus.emit('play-sfx', 'sfx-click');
       gameBus.emit('go-home', undefined);
     },
+    'go-btn-restart': () => {
+      gameBus.emit('play-sfx', 'sfx-click');
+      gameBus.emit('restart-game', undefined);
+    },
     'go-btn-challenge': () => {
       gameBus.emit('play-sfx', 'sfx-click');
       logClick('challenge_send');
@@ -87,7 +91,7 @@ export function GameOverScreen({ data }: Props) {
   if (!ready) return null;
 
   // 버튼 vs 텍스트/이미지 분류 → 딜레이 다르게
-  const btnIds = new Set(['go-btn-revive', 'go-btn-home', 'go-btn-challenge', 'go-btn-ranking']);
+  const btnIds = new Set(['go-btn-revive', 'go-btn-home', 'go-btn-restart', 'go-btn-challenge', 'go-btn-ranking']);
 
   return (
     <div className={`${styles.overlay} ${styles.fadeIn}`}>

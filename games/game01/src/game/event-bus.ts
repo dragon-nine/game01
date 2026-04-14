@@ -34,6 +34,7 @@ type EventMap = {
   'game-over-data': GameOverData;
   // React → Phaser actions
   'start-game': void;
+  'restart-game': void;  // 게임오버 화면에서 바로 재시작
   'resume-game': void;
   'revive': void;            // 광고 시청 → 부활
   'revive-with-gems': void;  // 보석 차감 → 부활 (광고 X)

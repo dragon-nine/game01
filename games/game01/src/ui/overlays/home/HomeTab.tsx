@@ -148,15 +148,16 @@ export function HomeTab({ scale }: Props) {
         </div>
       </div>
 
-      {/* 좌측 플로팅 메뉴 — 출석 / 미션 */}
+      {/* 우측 플로팅 메뉴 — 출석 / 미션 / 랭킹 */}
       <div
         className={introClass}
         style={{
           position: 'absolute',
-          left: 10 * scale,
+          right: 10 * scale,
           top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
           display: 'flex',
           flexDirection: 'column',
+          alignItems: 'flex-end',
           gap: 8 * scale,
           zIndex: 5,
           pointerEvents: 'auto',
@@ -223,14 +224,14 @@ export function HomeTab({ scale }: Props) {
       {openModal === 'mission' && <MissionModal onClose={closeModal} />}
       {openModal === 'debug' && <DebugModal onClose={closeModal} />}
 
-      {/* 우측 플로팅: 디버그 (DEV 전용) — 설정 아래 */}
+      {/* 좌측 플로팅: 디버그 (DEV 전용) */}
       {import.meta.env.DEV && (
         <div
           className={introClass}
           style={{
             position: 'absolute',
-            right: 12 * scale,
-            top: `calc(var(--sat, 0px) + ${64 * scale}px)`,
+            left: 12 * scale,
+            top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
             zIndex: 5,
             pointerEvents: 'auto',
             animationDelay: '1.2s',
