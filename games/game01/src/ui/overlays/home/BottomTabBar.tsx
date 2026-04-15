@@ -53,9 +53,9 @@ const TABS: TabDef[] = [
 ];
 
 export function BottomTabBar({ active, onChange, scale }: Props) {
-  const barH = 64 * scale;
-  const iconSize = 24 * scale;
-  const labelSize = 11 * scale;
+  const barH = 76 * scale;
+  const iconSize = 28 * scale;
+  const labelSize = 13 * scale;
 
   return (
     <div
@@ -84,7 +84,7 @@ export function BottomTabBar({ active, onChange, scale }: Props) {
       >
         {TABS.map((tab) => {
           const isActive = active === tab.key;
-          const accent = isActive ? '#ffd24a' : 'rgba(255,255,255,0.65)';
+          const accent = isActive ? '#ffd24a' : 'rgba(255,255,255,0.9)';
           return (
             <TapButton
               key={tab.key}
