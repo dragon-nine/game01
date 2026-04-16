@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { logEvent } from '../../../game/services/analytics';
+import { updateMyProfile } from '../../../game/services/api';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { ModalShell } from '../../components/ModalShell';
 import { TapButton } from '../../components/TapButton';
@@ -45,6 +46,16 @@ const CHARACTERS: CharItem[] = [
     available: true,
   },
   {
+    id: 'penguin',
+    name: '꾸벅이',
+    jobTitle: '수습',
+    desc: '인사만 200번째. 이름은 아직 아무도 몰라준다.',
+    src: 'character/penguin-front.png',
+    available: true,
+    price: 1500,
+    currency: 'coin',
+  },
+  {
     id: 'sheep',
     name: '메에리',
     jobTitle: '사원',
@@ -54,6 +65,16 @@ const CHARACTERS: CharItem[] = [
     price: 2500,
     currency: 'coin',
     highlight: 'hot',
+  },
+  {
+    id: 'cat',
+    name: '냥빠꾸',
+    jobTitle: '주임',
+    desc: '하기 싫은 건 절대 안 한다. 근데 하면 잘한다.',
+    src: 'character/cat-front.png',
+    available: true,
+    price: 4500,
+    currency: 'coin',
   },
   {
     id: 'koala',
@@ -105,6 +126,10 @@ export function CharactersTab({ scale }: Props) {
       setSelected(item.id);
       logEvent('character_select', { id: item.id });
       gameBus.emit('toast', `${item.name} 선택됨`);
+      // 서버 프로필에도 반영 (랭킹에 최신 캐릭터 보이게) — 실패 시 무시 (로컬은 이미 반영)
+      updateMyProfile({ character: item.id }).catch((e) => {
+        console.warn('[api] character sync failed:', e);
+      });
       return;
     }
 
@@ -139,6 +164,10 @@ export function CharactersTab({ scale }: Props) {
       currency: item.currency,
     });
     gameBus.emit('toast', `${item.name} 구매 완료!`);
+    // 서버 보유 목록 싱크 — 실패해도 로컬엔 반영됨. 다음 부팅에 재싱크됨.
+    updateMyProfile({ owned_characters: storage.getOwnedCharacters() }).catch((e) => {
+      console.warn('[api] owned sync failed:', e);
+    });
     setPendingChar(null);
   };
 

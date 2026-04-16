@@ -69,6 +69,8 @@ type EventMap = {
   'ad-show-end': void;
   // Debug
   'toggle-godmode': void;
+  // 서버 프로필 동기 완료 — nickname/character/owned 등 업데이트됨
+  'profile-synced': void;
 };
 
 type Listener<T> = (data: T) => void;

@@ -4,9 +4,13 @@ import { ModalShell, type ModalTabDef } from '../../components/ModalShell';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { Text } from '../../components/Text';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
-import { storage } from '../../../game/services/storage';
-import { fetchLeaderboard, fetchMyRank, getStoredUserId, type Period as ApiPeriod, type LeaderEntry } from '../../../game/services/api';
-import { getNickname } from './ProfileModal';
+import { fetchLeaderboard, getStoredUserId, type Period as ApiPeriod, type LeaderEntry, type LeaderboardResponse } from '../../../game/services/api';
+
+// 모달 열려있는 동안 탭 왕복 시 즉시 표시 — 15초 fresh, 넘으면 백그라운드 refresh.
+// 모듈 전역이라 모달 닫았다 다시 열어도 15초 내엔 캐시 적중.
+const RANK_CACHE = new Map<ApiPeriod, { at: number; data: LeaderboardResponse }>();
+const RANK_TTL_MS = 15_000;
+import styles from '../overlay.module.css';
 
 interface Props {
   onClose: () => void;
@@ -14,12 +18,14 @@ interface Props {
 
 type TabKey = 'daily' | 'weekly' | 'all';
 
-type CharKey = 'rabbit' | 'sheep' | 'koala' | 'lion';
+type CharKey = 'rabbit' | 'penguin' | 'sheep' | 'cat' | 'koala' | 'lion';
 
 const BASE = import.meta.env.BASE_URL || '/';
 const CHAR_SRC: Record<CharKey, string> = {
   rabbit: `${BASE}character/rabbit-front.png`,
+  penguin: `${BASE}character/penguin-front.png`,
   sheep: `${BASE}character/sheep-front.png`,
+  cat: `${BASE}character/cat-front.png`,
   koala: `${BASE}character/koala-front.png`,
   lion: `${BASE}character/lion-front.png`,
 };
@@ -66,24 +72,7 @@ const TABS: ModalTabDef[] = [
 ];
 
 
-interface Reward { coin?: number; gem?: number }
-
-function getReward(tab: TabKey, rank: number): Reward | null {
-  if (tab === 'daily') {
-    if (rank === 1) return { coin: 200, gem: 3 };
-    if (rank === 2) return { coin: 150 };
-    if (rank === 3) return { coin: 100 };
-    return null;
-  }
-  if (tab === 'weekly') {
-    if (rank === 1) return { coin: 1000, gem: 15 };
-    if (rank === 2) return { coin: 700, gem: 10 };
-    if (rank === 3) return { coin: 500, gem: 7 };
-    if (rank <= 10) return { coin: 300 };
-    return null;
-  }
-  return null;
-}
+import { getReward, type Reward } from '../../../game/services/rewards';
 
 // ── 시간 유틸 ───────────────────────────────────────────
 function useCountdown(target: Date): string {
@@ -123,7 +112,7 @@ function toApiPeriod(tab: TabKey): ApiPeriod {
 
 // 캐릭터 매핑 (서버 string → 클라 CharKey 화이트리스트)
 function normalizeChar(c: string | null | undefined): CharKey {
-  if (c === 'rabbit' || c === 'sheep' || c === 'koala' || c === 'lion') return c;
+  if (c === 'rabbit' || c === 'penguin' || c === 'sheep' || c === 'cat' || c === 'koala' || c === 'lion') return c;
   return 'rabbit';
 }
 
@@ -131,37 +120,50 @@ function normalizeChar(c: string | null | undefined): CharKey {
 export function RankingModal({ onClose }: Props) {
   const scale = useResponsiveScale();
   const [tab, setTab] = useState<TabKey>('daily');
-  const myName = getNickname();
-  const myChar = (storage.getSelectedCharacter() as CharKey) || 'rabbit';
   const myUserId = getStoredUserId();
 
   const dailyCountdown = useCountdown(useMemo(() => nextMidnight(), []));
   const weeklyCountdown = useCountdown(useMemo(() => nextMonday(), []));
 
   // 탭별 서버 데이터
-  const [topRanked, setTopRanked] = useState<LeaderEntry[]>([]);
-  const [myRank, setMyRank] = useState<number | null>(null);
-  const [myScore, setMyScore] = useState(0);
+  const [top, setTop] = useState<LeaderEntry[]>([]);
+  const [me, setMe] = useState<LeaderEntry | null>(null);
+  const [above, setAbove] = useState<LeaderEntry[]>([]);
+  const [below, setBelow] = useState<LeaderEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     const apiPeriod = toApiPeriod(tab);
-    Promise.all([
-      fetchLeaderboard(apiPeriod, 10),
-      fetchMyRank(apiPeriod).catch(() => null), // 인증 안되어 있으면 null
-    ])
-      .then(([lb, me]) => {
+    const cached = RANK_CACHE.get(apiPeriod);
+    const fresh = cached && Date.now() - cached.at < RANK_TTL_MS;
+
+    // 캐시 있으면 즉시 표시 (로딩 X). fresh 아니면 백그라운드 refresh.
+    if (cached) {
+      setTop(cached.data.top);
+      setMe(cached.data.me);
+      setAbove(cached.data.around?.above ?? []);
+      setBelow(cached.data.around?.below ?? []);
+      setLoading(false);
+      setError(null);
+      if (fresh) return;
+    } else {
+      setLoading(true);
+      setError(null);
+    }
+
+    fetchLeaderboard(apiPeriod)
+      .then((lb) => {
         if (cancelled) return;
-        setTopRanked(lb.ranked);
-        setMyRank(me?.my_rank ?? null);
-        setMyScore(me?.my_score ?? 0);
+        RANK_CACHE.set(apiPeriod, { at: Date.now(), data: lb });
+        setTop(lb.top);
+        setMe(lb.me);
+        setAbove(lb.around?.above ?? []);
+        setBelow(lb.around?.below ?? []);
       })
       .catch((e) => {
-        if (cancelled) return;
+        if (cancelled || cached) return; // 캐시 표시 중이면 에러 무시
         setError('랭킹을 불러오지 못했어요');
         console.warn('[ranking] fetch failed:', e);
       })
@@ -169,9 +171,20 @@ export function RankingModal({ onClose }: Props) {
     return () => { cancelled = true; };
   }, [tab]);
 
-  // top10 에 내가 포함되어 있는지
-  const meInTop = !!myUserId && topRanked.some((r) => r.user_id === myUserId);
-  const showNearby = !!myRank && myRank > 10 && !meInTop;
+  // 표시 행 계산: me.rank ≤ 10 이면 top + below(앞뒤 2개씩 보장하기 위한 덧붙임)
+  // me.rank > 10 이면 top + 구분선 + above + me + below
+  const meRank = me?.rank ?? null;
+  const meInTop = meRank !== null && meRank <= 10;
+
+  let topRows: LeaderEntry[] = top;
+  if (meInTop && meRank !== null) {
+    // 내 뒤로 2개 보장: 부족분만큼 below에서 채움
+    const haveBelowInTop = 10 - meRank; // top 내에서 내 뒤 개수
+    const needExtra = Math.max(0, 2 - haveBelowInTop);
+    if (needExtra > 0 && below.length > 0) {
+      topRows = [...top, ...below.slice(0, needExtra)];
+    }
+  }
 
   return createPortal(
     <ModalShell
@@ -205,23 +218,25 @@ export function RankingModal({ onClose }: Props) {
         }}
       >
         {loading && (
-          <div style={{ padding: 24 * scale, textAlign: 'center' }}>
-            <Text size={12 * scale} color="#9ba0ab">불러오는 중…</Text>
-          </div>
+          <>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonRow key={`sk-${i}`} scale={scale} />
+            ))}
+          </>
         )}
         {error && !loading && (
           <div style={{ padding: 24 * scale, textAlign: 'center' }}>
             <Text size={12 * scale} color="#ff8a7a">{error}</Text>
           </div>
         )}
-        {!loading && !error && topRanked.length === 0 && (
+        {!loading && !error && top.length === 0 && (
           <div style={{ padding: 24 * scale, textAlign: 'center' }}>
             <Text size={12 * scale} color="#9ba0ab">아직 기록이 없어요. 첫 주자가 되어보세요!</Text>
           </div>
         )}
-        {!loading && !error && topRanked.map((entry) => (
+        {!loading && !error && topRows.map((entry) => (
           <RankRow
-            key={`top-${entry.user_id}`}
+            key={`top-${entry.user_id}-${entry.rank}`}
             rank={entry.rank}
             name={entry.nickname}
             score={entry.score}
@@ -232,8 +247,8 @@ export function RankingModal({ onClose }: Props) {
           />
         ))}
 
-        {/* 내 순위가 top10 밖이면 구분선(...) + 나 */}
-        {!loading && !error && showNearby && (
+        {/* 내 순위가 top10 밖이면 구분선(···) + above + me + below */}
+        {!loading && !error && me && !meInTop && (
           <>
             <div
               style={{
@@ -248,21 +263,69 @@ export function RankingModal({ onClose }: Props) {
             >
               ···
             </div>
+            {above.map((entry) => (
+              <RankRow
+                key={`above-${entry.user_id}-${entry.rank}`}
+                rank={entry.rank}
+                name={entry.nickname}
+                score={entry.score}
+                char={normalizeChar(entry.character)}
+                reward={getReward(tab, entry.rank)}
+                scale={scale}
+              />
+            ))}
             <RankRow
-              key="me"
-              rank={myRank!}
-              name={myName}
-              score={myScore}
-              char={myChar}
-              reward={null}
+              key={`me-${me.user_id}`}
+              rank={me.rank}
+              name={me.nickname}
+              score={me.score}
+              char={normalizeChar(me.character)}
+              reward={getReward(tab, me.rank)}
               scale={scale}
               isMe
             />
+            {below.map((entry) => (
+              <RankRow
+                key={`below-${entry.user_id}-${entry.rank}`}
+                rank={entry.rank}
+                name={entry.nickname}
+                score={entry.score}
+                char={normalizeChar(entry.character)}
+                reward={getReward(tab, entry.rank)}
+                scale={scale}
+              />
+            ))}
           </>
         )}
       </div>
     </ModalShell>,
     document.body,
+  );
+}
+
+function SkeletonRow({ scale }: { scale: number }) {
+  const avatarSize = 36 * scale;
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: `${10 * scale}px ${12 * scale}px`,
+        borderBottom: `${1 * scale}px solid rgba(255,255,255,0.06)`,
+        gap: 10 * scale,
+      }}
+    >
+      <div className={styles.skeleton} style={{ width: 18 * scale, height: 12 * scale }} />
+      <div
+        className={styles.skeleton}
+        style={{ width: avatarSize, height: avatarSize, borderRadius: '50%', flexShrink: 0 }}
+      />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 * scale }}>
+        <div className={styles.skeleton} style={{ width: '60%', height: 10 * scale }} />
+        <div className={styles.skeleton} style={{ width: '35%', height: 8 * scale }} />
+      </div>
+      <div className={styles.skeleton} style={{ width: 40 * scale, height: 10 * scale }} />
+    </div>
   );
 }
 

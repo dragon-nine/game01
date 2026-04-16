@@ -4,8 +4,8 @@ import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
 import { CoinIcon } from '../components/CurrencyIcons';
 import { adService } from '../../game/services/ad-service';
-import { openLeaderboard } from '../../game/services/leaderboard';
 import { logClick, logEvent } from '../../game/services/analytics';
+import { RankingModal } from './home/RankingModal';
 import { storage } from '../../game/services/storage';
 import { getRandomQuote } from '../../game/game-over-quotes';
 import { LayoutText } from '../components/LayoutText';
@@ -29,6 +29,7 @@ export function GameOverScreen({ data }: Props) {
   const excludeIds = useMemo(() => ['quoteText'], []);
   const { positions, elements, scale, ready } = useLayout('game-over', IMAGE_MAP, excludeIds);
   const [bonusClaimed, setBonusClaimed] = useState(false);
+  const [rankingOpen, setRankingOpen] = useState(false);
   const canBonus = coinsEarned > 0 && !bonusClaimed;
 
   // 텍스트 내용 오버라이드 (동적 값)
@@ -83,7 +84,7 @@ export function GameOverScreen({ data }: Props) {
     'go-btn-ranking': () => {
       gameBus.emit('play-sfx', 'sfx-click');
       logClick('leaderboard_open');
-      openLeaderboard();
+      setRankingOpen(true);
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [score, canBonus, coinsEarned, bonusClaimed]);
@@ -165,6 +166,7 @@ export function GameOverScreen({ data }: Props) {
           </div>
         );
       })}
+      {rankingOpen && <RankingModal onClose={() => setRankingOpen(false)} />}
     </div>
   );
 }

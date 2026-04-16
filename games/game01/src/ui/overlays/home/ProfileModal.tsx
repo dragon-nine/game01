@@ -15,6 +15,7 @@ interface Props {
 const NICKNAME_KEY = 'nickname';
 const DEFAULT_NICKNAME = '토끼킹';
 const MAX_LEN = 8;
+const NICK_PATTERN = /^[가-힣a-zA-Z0-9]+$/;
 
 export function getNickname(): string {
   return localStorage.getItem(NICKNAME_KEY) || DEFAULT_NICKNAME;
@@ -38,6 +39,10 @@ export function ProfileModal({ onClose }: Props) {
     }
     if (trimmed.length > MAX_LEN) {
       gameBus.emit('toast', `닉네임은 최대 ${MAX_LEN}자`);
+      return;
+    }
+    if (!NICK_PATTERN.test(trimmed)) {
+      gameBus.emit('toast', '한글/영어/숫자만 가능해요');
       return;
     }
     if (saving) return;
@@ -77,7 +82,11 @@ export function ProfileModal({ onClose }: Props) {
       <input
         ref={inputRef}
         value={name}
-        onChange={(e) => setName(e.target.value.slice(0, MAX_LEN))}
+        onChange={(e) => {
+          // 한글/영어/숫자만 허용, 공백·특수문자 실시간 제거
+          const filtered = e.target.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9]/g, '');
+          setName(filtered.slice(0, MAX_LEN));
+        }}
         maxLength={MAX_LEN}
         style={{
           width: '100%',

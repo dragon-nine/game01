@@ -3,6 +3,8 @@ import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { ALL_MISSION_IDS, getClaimableMissionCount } from '../../../game/services/missions';
 import { isAdRemoved } from '../../../game/services/billing';
+import { fetchMyRanks, getStoredUserId } from '../../../game/services/api';
+import { getReward, nextDailyKey, nextWeeklyKey, type RewardPeriod } from '../../../game/services/rewards';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
 import { TapButton } from '../../components/TapButton';
@@ -63,6 +65,59 @@ export function HomeTab({ scale }: Props) {
   useEffect(() => {
     homeIntroPlayed = true;
   }, []);
+
+  // 서버 프로필 동기 완료 시 닉네임 다시 읽기 (+ 마운트 직후 1회 재확인: 이벤트 놓친 경우 보강)
+  useEffect(() => {
+    setNickname(getNickname());
+    return gameBus.on('profile-synced', () => setNickname(getNickname()));
+  }, []);
+
+  // 랭킹 보상 체크 — 접속 시 1회, 완료된 기간의 내 순위 조회 후 보상 적립
+  useEffect(() => {
+    if (!getStoredUserId()) return;
+    const lastDaily = localStorage.getItem('reward.lastDailyKey');
+    const lastWeekly = localStorage.getItem('reward.lastWeeklyKey');
+    // lastKey 가 있으면 그 다음 기간부터 조회 (이미 받은 기간 제외)
+    const fromDaily = lastDaily ? nextDailyKey(lastDaily) : undefined;
+    const fromWeekly = lastWeekly ? nextWeeklyKey(lastWeekly) : undefined;
+
+    fetchMyRanks(fromDaily, fromWeekly)
+      .then((res) => {
+        let coins = 0;
+        let gems = 0;
+        let latestDaily = lastDaily;
+        let latestWeekly = lastWeekly;
+
+        for (const e of res.daily) {
+          const r = getReward('daily' as RewardPeriod, e.rank);
+          if (r?.coin) coins += r.coin;
+          if (r?.gem) gems += r.gem;
+          if (!latestDaily || e.period_key > latestDaily) latestDaily = e.period_key;
+        }
+        for (const e of res.weekly) {
+          const r = getReward('weekly' as RewardPeriod, e.rank);
+          if (r?.coin) coins += r.coin;
+          if (r?.gem) gems += r.gem;
+          if (!latestWeekly || e.period_key > latestWeekly) latestWeekly = e.period_key;
+        }
+
+        // 보상 없어도 체크 시점은 갱신 (빈 기간도 스킵 처리)
+        if (latestDaily) localStorage.setItem('reward.lastDailyKey', latestDaily);
+        if (latestWeekly) localStorage.setItem('reward.lastWeeklyKey', latestWeekly);
+
+        if (coins > 0 || gems > 0) {
+          if (coins > 0) storage.addNum('coins', coins);
+          if (gems > 0) storage.addNum('gems', gems);
+          storage.flushNums();
+          const items: { kind: 'coin' | 'gem'; amount: number; label?: string }[] = [];
+          if (coins > 0) items.push({ kind: 'coin', amount: coins, label: '랭킹 보상' });
+          if (gems > 0) items.push({ kind: 'gem', amount: gems, label: '랭킹 보상' });
+          gameBus.emit('show-reward', items);
+        }
+      })
+      .catch((e) => console.warn('[reward-check] failed:', e));
+  }, []);
+
   const introClass = playIntroRef.current ? styles.fadeInUp : '';
 
   const handleStart = () => {
@@ -119,7 +174,7 @@ export function HomeTab({ scale }: Props) {
           justifyContent: 'space-between',
           alignItems: 'center',
           zIndex: 10,
-          animationDelay: '1.2s',
+          animationDelay: '0.15s',
           pointerEvents: 'auto',
         }}
       >
@@ -159,7 +214,7 @@ export function HomeTab({ scale }: Props) {
           gap: 8 * scale,
           zIndex: 5,
           pointerEvents: 'auto',
-          animationDelay: '0.8s',
+          animationDelay: '0.15s',
         }}
       >
         <FloatingMenuButton
@@ -252,7 +307,7 @@ export function HomeTab({ scale }: Props) {
             top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
             zIndex: 5,
             pointerEvents: 'auto',
-            animationDelay: '0.8s',
+            animationDelay: '0.15s',
           }}
         >
           <FloatingMenuButton
@@ -279,7 +334,7 @@ export function HomeTab({ scale }: Props) {
         className={introClass}
         style={{
           marginTop: `calc(var(--sat, 0px) + ${72 * scale}px)`,
-          animationDelay: '0.2s',
+          animationDelay: '0.15s',
           position: 'relative',
           zIndex: 1,
         }}
@@ -302,7 +357,7 @@ export function HomeTab({ scale }: Props) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          animationDelay: '0.4s',
+          animationDelay: '0.15s',
           position: 'relative',
           zIndex: 1,
           pointerEvents: 'none',
@@ -341,7 +396,7 @@ export function HomeTab({ scale }: Props) {
         <div
           className={introClass}
           style={{
-            animationDelay: '0.6s',
+            animationDelay: '0.15s',
             padding: `${5 * scale}px ${16 * scale}px`,
             background: 'rgba(0,0,0,0.55)',
             border: `${2 * scale}px solid rgba(255,210,74,0.8)`,

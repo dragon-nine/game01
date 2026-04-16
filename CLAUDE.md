@@ -5,7 +5,9 @@
 ## 구조
 ```
 ├── admin/          — 에셋/레이아웃 관리 어드민 (Vite + React)
-├── api/            — Vercel serverless functions (R2 Storage API)
+├── api/            — Vercel serverless functions (R2 Storage CRUD, 어드민용)
+                    ※ 게임 백엔드 API는 별도 레포: `dragon-nine/api` (Cloudflare Workers + D1 + KV)
+                       https://dragon-nine-api.dragonnine.workers.dev
 ├── scripts/        — 빌드/동기화 스크립트
 ├── games/game01/   — 직장인 잔혹사 (Phaser 3 + React 하이브리드)
 ├── vercel.json     — 라우팅 + 빌드 커맨드
