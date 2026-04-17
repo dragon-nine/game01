@@ -3,6 +3,7 @@ import { submitScore as submitLeaderboardScore } from './services/leaderboard';
 import { logEvent } from './services/analytics';
 import { gameBus } from './event-bus';
 import { storage } from './services/storage';
+import { submitScore as submitApiScore } from './services/api';
 import {
   calcViewLeft, panViewTo, scrollToCurrentRow,
   type MovementDeps,
@@ -118,6 +119,11 @@ export function endGame(deps: LifecycleDeps) {
     });
   } catch { /* 무시 */ }
   try { submitLeaderboardScore(deps.getScore()); } catch { /* 무시 */ }
+  // Dragon Nine API 점수 제출 (실패해도 게임 흐름 무관)
+  submitApiScore(deps.getScore(), {
+    revived: deps.getHasRevived(),
+    character: storage.getSelectedCharacter(),
+  }).catch((e) => console.warn('[api] score submit failed:', e));
 
   // 저장은 실패 시에도 게임오버는 진행 — best/flush 실패는 다음 게임에서 복구
   let bestScore = deps.getScore();

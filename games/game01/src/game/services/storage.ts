@@ -309,6 +309,13 @@ export const storage = {
     localStorage.setItem(KEYS.ownedCharacters, JSON.stringify([...current, id]));
   },
 
+  setOwnedCharacters(ids: string[]): void {
+    const unique = Array.from(new Set(ids.filter((s) => typeof s === 'string' && s.length > 0)));
+    // DEFAULT_CHARACTER 항상 포함 보장
+    if (!unique.includes(DEFAULT_CHARACTER)) unique.unshift(DEFAULT_CHARACTER);
+    localStorage.setItem(KEYS.ownedCharacters, JSON.stringify(unique));
+  },
+
   /* ──────────────  Attendance  ────────────── */
 
   getAttendance(): AttendanceState {

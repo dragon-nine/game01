@@ -80,6 +80,23 @@
   to { transform: scale(1.03); }
 }
 
+/* 스켈레톤 shimmer — 로딩 플레이스홀더용 */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.12) 50%,
+    rgba(255,255,255,0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 6px;
+}
+
 /* 버튼 공통 */
 .imgBtn {
   cursor: pointer;

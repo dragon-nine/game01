@@ -3,7 +3,8 @@ import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { ALL_MISSION_IDS, getClaimableMissionCount } from '../../../game/services/missions';
 import { isAdRemoved } from '../../../game/services/billing';
-import { openLeaderboard } from '../../../game/services/leaderboard';
+import { fetchMyRanks, getStoredUserId } from '../../../game/services/api';
+import { getReward, nextDailyKey, nextWeeklyKey, type RewardPeriod } from '../../../game/services/rewards';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
 import { TapButton } from '../../components/TapButton';
@@ -11,6 +12,8 @@ import { Text } from '../../components/Text';
 import { AttendanceModal } from './AttendanceModal';
 import { DebugModal } from './DebugModal';
 import { MissionModal } from './MissionModal';
+import { RankingModal } from './RankingModal';
+import { ProfileModal, getNickname } from './ProfileModal';
 import styles from '../overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -32,7 +35,9 @@ export function HomeTab({ scale }: Props) {
   const coins = storage.getNum('coins');
   const gems = storage.getNum('gems');
   const adRemoved = isAdRemoved();
-  const [openModal, setOpenModal] = useState<'attendance' | 'mission' | 'debug' | null>(null);
+  const [openModal, setOpenModal] = useState<'attendance' | 'mission' | 'ranking' | 'profile' | 'debug' | null>(null);
+  const [nickname, setNickname] = useState(getNickname);
+  const selectedChar = storage.getSelectedCharacter();
 
   // 뱃지 — 모달 닫힐 때마다 재계산 (claim 후 즉시 반영)
   const [attendanceBadge, setAttendanceBadge] = useState<string | undefined>(
@@ -52,6 +57,7 @@ export function HomeTab({ scale }: Props) {
   const closeModal = () => {
     setOpenModal(null);
     refreshBadges();
+    setNickname(getNickname());
   };
 
   // 첫 마운트에서만 인트로 애니메이션 재생
@@ -59,6 +65,59 @@ export function HomeTab({ scale }: Props) {
   useEffect(() => {
     homeIntroPlayed = true;
   }, []);
+
+  // 서버 프로필 동기 완료 시 닉네임 다시 읽기 (+ 마운트 직후 1회 재확인: 이벤트 놓친 경우 보강)
+  useEffect(() => {
+    setNickname(getNickname());
+    return gameBus.on('profile-synced', () => setNickname(getNickname()));
+  }, []);
+
+  // 랭킹 보상 체크 — 접속 시 1회, 완료된 기간의 내 순위 조회 후 보상 적립
+  useEffect(() => {
+    if (!getStoredUserId()) return;
+    const lastDaily = localStorage.getItem('reward.lastDailyKey');
+    const lastWeekly = localStorage.getItem('reward.lastWeeklyKey');
+    // lastKey 가 있으면 그 다음 기간부터 조회 (이미 받은 기간 제외)
+    const fromDaily = lastDaily ? nextDailyKey(lastDaily) : undefined;
+    const fromWeekly = lastWeekly ? nextWeeklyKey(lastWeekly) : undefined;
+
+    fetchMyRanks(fromDaily, fromWeekly)
+      .then((res) => {
+        let coins = 0;
+        let gems = 0;
+        let latestDaily = lastDaily;
+        let latestWeekly = lastWeekly;
+
+        for (const e of res.daily) {
+          const r = getReward('daily' as RewardPeriod, e.rank);
+          if (r?.coin) coins += r.coin;
+          if (r?.gem) gems += r.gem;
+          if (!latestDaily || e.period_key > latestDaily) latestDaily = e.period_key;
+        }
+        for (const e of res.weekly) {
+          const r = getReward('weekly' as RewardPeriod, e.rank);
+          if (r?.coin) coins += r.coin;
+          if (r?.gem) gems += r.gem;
+          if (!latestWeekly || e.period_key > latestWeekly) latestWeekly = e.period_key;
+        }
+
+        // 보상 없어도 체크 시점은 갱신 (빈 기간도 스킵 처리)
+        if (latestDaily) localStorage.setItem('reward.lastDailyKey', latestDaily);
+        if (latestWeekly) localStorage.setItem('reward.lastWeeklyKey', latestWeekly);
+
+        if (coins > 0 || gems > 0) {
+          if (coins > 0) storage.addNum('coins', coins);
+          if (gems > 0) storage.addNum('gems', gems);
+          storage.flushNums();
+          const items: { kind: 'coin' | 'gem'; amount: number; label?: string }[] = [];
+          if (coins > 0) items.push({ kind: 'coin', amount: coins, label: '랭킹 보상' });
+          if (gems > 0) items.push({ kind: 'gem', amount: gems, label: '랭킹 보상' });
+          gameBus.emit('show-reward', items);
+        }
+      })
+      .catch((e) => console.warn('[reward-check] failed:', e));
+  }, []);
+
   const introClass = playIntroRef.current ? styles.fadeInUp : '';
 
   const handleStart = () => {
@@ -89,7 +148,7 @@ export function HomeTab({ scale }: Props) {
     >
       {/* 페이지 배경 */}
       <img
-        src={`${BASE}main-screen/main-bg.png`}
+        src="https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev/shared/%E1%84%86%E1%85%A6%E1%84%8B%E1%85%B5%E1%86%AB%E1%84%87%E1%85%A2%E1%84%80%E1%85%A7%E1%86%BC.jpg"
         alt=""
         style={{
           position: 'absolute',
@@ -115,32 +174,26 @@ export function HomeTab({ scale }: Props) {
           justifyContent: 'space-between',
           alignItems: 'center',
           zIndex: 10,
-          animationDelay: '1.2s',
+          animationDelay: '0.15s',
           pointerEvents: 'auto',
         }}
       >
-        {/* 좌측: 부활 광고 제거 (단일 동그라미) — 구매 후 숨김 */}
-        {adRemoved ? (
-          <div style={{ width: 48 * scale, height: 48 * scale }} />
-        ) : (
-          <CircleButton
-            accent="#ff6b3c"
-            scale={scale}
-            onTap={() => gameBus.emit('show-ad-remove', undefined)}
-          >
-            <svg width={38 * scale} height={38 * scale} viewBox="0 0 24 24">
-              <text x="12" y="17" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Arial Black, sans-serif" fill="#fff" letterSpacing="-0.5">AD</text>
-              <line x1="3" y1="3" x2="21" y2="21" stroke="#ff6b3c" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-          </CircleButton>
-        )}
+        {/* 좌측: 프로필 (닉네임) */}
+        <ProfilePill
+          nickname={nickname}
+          scale={scale}
+          onTap={() => {
+            gameBus.emit('play-sfx', 'sfx-click');
+            setOpenModal('profile');
+          }}
+        />
 
         {/* 우측: 코인/보석/설정 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 * scale }}>
           <CurrencyPill kind="coin" amount={coins} scale={scale} />
           <CurrencyPill kind="gem" amount={gems} scale={scale} />
-          <CircleButton accent="#ffffff" scale={scale} onTap={handleSettings}>
-            <svg width={22 * scale} height={22 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <CircleButton accent="#ffffff" scale={scale} size={38} onTap={handleSettings}>
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
             </svg>
@@ -161,7 +214,7 @@ export function HomeTab({ scale }: Props) {
           gap: 8 * scale,
           zIndex: 5,
           pointerEvents: 'auto',
-          animationDelay: '0.8s',
+          animationDelay: '0.15s',
         }}
       >
         <FloatingMenuButton
@@ -214,53 +267,74 @@ export function HomeTab({ scale }: Props) {
           scale={scale}
           onTap={() => {
             gameBus.emit('play-sfx', 'sfx-click');
-            openLeaderboard();
+            setOpenModal('ranking');
           }}
         />
-      </div>
-
-      {/* 모달 */}
-      {openModal === 'attendance' && <AttendanceModal onClose={closeModal} />}
-      {openModal === 'mission' && <MissionModal onClose={closeModal} />}
-      {openModal === 'debug' && <DebugModal onClose={closeModal} />}
-
-      {/* 좌측 플로팅: 디버그 (DEV 전용) */}
-      {import.meta.env.DEV && (
-        <div
-          className={introClass}
-          style={{
-            position: 'absolute',
-            left: 12 * scale,
-            top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
-            zIndex: 5,
-            pointerEvents: 'auto',
-            animationDelay: '1.2s',
-          }}
-        >
-          <CircleButton
+        {import.meta.env.DEV && (
+          <FloatingMenuButton
+            icon={
+              <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.7 6.3a4 4 0 015.66 5.66l-1.06-1.06a2.5 2.5 0 00-3.54-3.54l-1.06-1.06z" />
+                <path d="M13.5 7.5l-9 9a2.12 2.12 0 003 3l9-9" />
+                <circle cx="6.5" cy="17.5" r="1" fill="#fff" stroke="none" />
+              </svg>
+            }
+            label="디버그"
             accent="#ffffff"
             scale={scale}
             onTap={() => {
               gameBus.emit('play-sfx', 'sfx-click');
               setOpenModal('debug');
             }}
-          >
-            <svg width={24 * scale} height={24 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              {/* 렌치 아이콘 */}
-              <path d="M14.7 6.3a4 4 0 015.66 5.66l-1.06-1.06a2.5 2.5 0 00-3.54-3.54l-1.06-1.06z" />
-              <path d="M13.5 7.5l-9 9a2.12 2.12 0 003 3l9-9" />
-              <circle cx="6.5" cy="17.5" r="1" fill="#fff" stroke="none" />
-            </svg>
-          </CircleButton>
+          />
+        )}
+      </div>
+
+      {/* 모달 */}
+      {openModal === 'attendance' && <AttendanceModal onClose={closeModal} />}
+      {openModal === 'mission' && <MissionModal onClose={closeModal} />}
+      {openModal === 'ranking' && <RankingModal onClose={closeModal} />}
+      {openModal === 'profile' && <ProfileModal onClose={closeModal} />}
+      {openModal === 'debug' && <DebugModal onClose={closeModal} />}
+
+      {/* 좌측 플로팅: 부활 광고 제거 (출석과 대칭) — 구매 후 숨김 */}
+      {!adRemoved && (
+        <div
+          className={introClass}
+          style={{
+            position: 'absolute',
+            left: 10 * scale,
+            top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
+            zIndex: 5,
+            pointerEvents: 'auto',
+            animationDelay: '0.15s',
+          }}
+        >
+          <FloatingMenuButton
+            icon={
+              <svg width={32 * scale} height={32 * scale} viewBox="0 0 24 24">
+                <text x="12" y="17" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Arial Black, sans-serif" fill="#fff" letterSpacing="-0.5">AD</text>
+                <line x1="3" y1="3" x2="21" y2="21" stroke="#ff6b3c" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            }
+            label="광고제거"
+            accent="#ff6b3c"
+            scale={scale}
+            onTap={() => {
+              gameBus.emit('play-sfx', 'sfx-click');
+              gameBus.emit('show-ad-remove', undefined);
+            }}
+          />
         </div>
       )}
+
 
       {/* 타이틀 */}
       <div
         className={introClass}
         style={{
           marginTop: `calc(var(--sat, 0px) + ${72 * scale}px)`,
-          animationDelay: '0.2s',
+          animationDelay: '0.15s',
           position: 'relative',
           zIndex: 1,
         }}
@@ -273,11 +347,43 @@ export function HomeTab({ scale }: Props) {
         />
       </div>
 
+      {/* 선택된 캐릭터 — 타이틀 바로 아래, 남은 세로 공간 가득 */}
+      <div
+        className={introClass}
+        style={{
+          marginTop: -16 * scale,
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animationDelay: '0.15s',
+          position: 'relative',
+          zIndex: 1,
+          pointerEvents: 'none',
+          width: '100%',
+        }}
+      >
+        <img
+          src={`${BASE}character/${selectedChar}-front.png`}
+          alt=""
+          draggable={false}
+          style={{
+            maxWidth: `${320 * scale}px`,
+            maxHeight: '100%',
+            width: 'auto',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+            filter: `drop-shadow(0 ${6 * scale}px ${12 * scale}px rgba(0,0,0,0.5))`,
+          }}
+        />
+      </div>
+
       {/* 하단: 최고기록 + 시작 버튼 */}
       <div
         style={{
-          marginTop: 'auto',
-          marginBottom: `calc(var(--sab, 0px) + ${76 * scale}px)`,
+          marginBottom: `calc(var(--sab, 0px) + ${130 * scale}px)`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -290,7 +396,7 @@ export function HomeTab({ scale }: Props) {
         <div
           className={introClass}
           style={{
-            animationDelay: '0.6s',
+            animationDelay: '0.15s',
             padding: `${5 * scale}px ${16 * scale}px`,
             background: 'rgba(0,0,0,0.55)',
             border: `${2 * scale}px solid rgba(255,210,74,0.8)`,
@@ -423,6 +529,51 @@ function FloatingMenuButton({
   );
 }
 
+/* ── 프로필 알약 버튼 (아바타 + 닉네임) ── */
+
+function ProfilePill({
+  nickname,
+  scale,
+  onTap,
+}: {
+  nickname: string;
+  scale: number;
+  onTap: () => void;
+}) {
+  const accent = '#ffd24a';
+  const glow = 'rgba(255,210,74,0.35)';
+  return (
+    <TapButton
+      onTap={onTap}
+      pressScale={0.94}
+      style={{
+        height: 38 * scale,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6 * scale,
+        padding: `0 ${12 * scale}px`,
+        background: 'linear-gradient(180deg, #1e2a3e 0%, #0e1726 100%)',
+        border: `${2 * scale}px solid ${accent}`,
+        borderRadius: 999,
+        boxShadow: `0 ${2 * scale}px ${8 * scale}px rgba(0,0,0,0.5), 0 0 ${10 * scale}px ${glow}`,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: 'GMarketSans, sans-serif',
+          fontWeight: 900,
+          fontSize: 12 * scale,
+          color: '#fff',
+          letterSpacing: 0.3,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {nickname}
+      </span>
+    </TapButton>
+  );
+}
+
 /* ── 단일 동그라미 버튼 (부활 광고 제거/설정용) ── */
 
 function CircleButton({
@@ -430,13 +581,15 @@ function CircleButton({
   scale,
   onTap,
   children,
+  size: sizeBase = 44,
 }: {
   accent: string;
   scale: number;
   onTap: () => void;
   children: React.ReactNode;
+  size?: number;
 }) {
-  const size = 48 * scale;
+  const size = sizeBase * scale;
   return (
     <TapButton
       onTap={onTap}
@@ -492,7 +645,7 @@ function CurrencyPill({
         style={{
           fontFamily: 'GMarketSans, sans-serif',
           fontWeight: 900,
-          fontSize: 14 * scale,
+          fontSize: 13 * scale,
           color: '#fff',
           letterSpacing: 0.3,
           minWidth: 20 * scale,

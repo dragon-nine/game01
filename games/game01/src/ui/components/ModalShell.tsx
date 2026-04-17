@@ -161,7 +161,7 @@ export function ModalShell({
                           transition: 'transform 0.15s ease-out',
                         }}
                       >
-                        {t.icon(isActive ? accent : 'rgba(255,255,255,0.55)', 22 * scale)}
+                        {t.icon(isActive ? accent : 'rgba(255,255,255,0.85)', 22 * scale)}
                       </div>
                     )}
                     <span
@@ -169,7 +169,7 @@ export function ModalShell({
                         fontFamily: 'GMarketSans, sans-serif',
                         fontWeight: isActive ? 900 : 700,
                         fontSize: 10 * scale,
-                        color: isActive ? accent : 'rgba(255,255,255,0.55)',
+                        color: isActive ? accent : 'rgba(255,255,255,0.85)',
                         letterSpacing: 0.3,
                         textShadow: isActive ? `0 0 ${4 * scale}px ${accent}50` : 'none',
                       }}
