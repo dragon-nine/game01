@@ -1,6 +1,5 @@
-/** Shared layout types — single source of truth for admin & game */
+/** Game-local layout types so game01 can live without repo-level shared code. */
 
-/** Design reference width — all px values are based on this */
 export const DESIGN_W = 390
 
 export type AnchorCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
@@ -11,7 +10,7 @@ export interface TextStyle {
   color?: string
   strokeColor?: string
   strokeWidth?: number
-  gradientColors?: [string, string]  // [top, bottom] 세로 그라데이션
+  gradientColors?: [string, string]
 }
 
 export type ButtonStyleType = 'flat' | 'outline' | 'doubleLine' | 'pill'
@@ -25,7 +24,7 @@ export interface ButtonStyle {
 
 interface LayoutElementBase {
   id: string
-  type: string   // text, image, button, card, modal, toggle, close, gauge, circle-btn
+  type: string
   widthPx: number
   widthMode?: 'full' | 'fixed'
   heightPx?: number
@@ -41,9 +40,9 @@ interface LayoutElementBase {
 
 export interface GroupElement extends LayoutElementBase {
   positioning: 'group'
-  order: number     // same order = horizontal row
-  gapPx: number     // px gap above this element (from previous row)
-  hGapPx?: number   // 같은 행에 2개 요소일 때 가로 간격 (기본 8)
+  order: number
+  gapPx: number
+  hGapPx?: number
 }
 
 export interface AnchorElement extends LayoutElementBase {
@@ -67,11 +66,6 @@ export interface ScreenLayout {
   bgAssetKey?: string
 }
 
-export interface LayoutIndex {
-  screens: { key: string; label: string; updatedAt: string }[]
-}
-
-/** Computed position for a single element */
 export interface ComputedPosition {
   id: string
   x: number
@@ -81,3 +75,5 @@ export interface ComputedPosition {
   originX: number
   originY: number
 }
+
+export { computeLayout } from './layout-compute'

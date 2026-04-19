@@ -1,9 +1,8 @@
-/** Shared layout computation — single source of truth for admin & game */
+/** Layout computation copied into game01 so the game no longer depends on repo-level shared code. */
 
-import type { LayoutElement, GroupElement, AnchorElement, ComputedPosition } from './types.ts'
-import { DESIGN_W } from './types.ts'
+import type { LayoutElement, GroupElement, AnchorElement, ComputedPosition } from './layout-types'
+import { DESIGN_W } from './layout-types'
 
-// 컴포넌트 고정 크기 (디자인 단위)
 const COMPONENT_SIZES: Record<string, { w: number; h: number }> = {
   toggle: { w: 77, h: 44 },
   close: { w: 32, h: 32 },
@@ -17,7 +16,6 @@ function calcTextHeight(el: LayoutElement, scale: number): number {
   return fontSizePx * scale * 1.4 * lines
 }
 
-/** 컨테이너(card/modal) 높이 — 자식 기반 재귀 계산 */
 function calcContainerHeight(
   el: LayoutElement,
   allElements: LayoutElement[],
@@ -69,10 +67,6 @@ function calcContainerHeight(
   return totalH + (ip.top + ip.bottom) * scale
 }
 
-/**
- * Compute layout positions for all elements.
- * Supports containers (card, modal) with children (parentId).
- */
 export function computeLayout(
   elements: LayoutElement[],
   screenW: number,
@@ -94,7 +88,6 @@ export function computeLayout(
   const contentW = designW - padding.left - padding.right
   const contentLeft = padding.left * scale
 
-  // ── Root group elements (no parentId) ──
   const groupEls = elements
     .filter((e): e is GroupElement => e.positioning === 'group' && !excluded.has(e.id) && !e.parentId && e.visible !== false)
 
@@ -132,7 +125,8 @@ export function computeLayout(
     }
     const hGap = el.hGapPx ?? 8
     const totalGap = hGap * (rowEls.length - 1)
-    let fixedTotal = 0, fullCount = 0
+    let fixedTotal = 0
+    let fullCount = 0
     for (const r of rowEls) {
       if (COMPONENT_SIZES[r.type]) fixedTotal += COMPONENT_SIZES[r.type].w
       else if (r.widthMode === 'fixed') fixedTotal += r.widthPx
@@ -159,10 +153,6 @@ export function computeLayout(
   const contentAreaH = screenH - padTop - padBottom
   const totalH = rows.reduce((sum, r, i) => sum + r.height + (i > 0 ? r.gapPx * scale : 0), 0)
 
-  // 'top' 정렬은 항상 padTop부터 시작 (overflow도 아래로만).
-  // 'center' 정렬은 사용 가능한 영역의 정중앙에 배치 — 콘텐츠가 넘치면
-  // overflow가 위/아래로 균등하게 분배됨 (과거에는 Math.max로 padTop에 고정해
-  // 모든 overflow가 아래로 쏠렸음).
   let curY = groupVAlign === 'top'
     ? padTop
     : padTop + (contentAreaH - totalH) / 2
@@ -191,7 +181,6 @@ export function computeLayout(
     curY += row.height
   }
 
-  // ── Anchor elements ──
   const anchorEls = elements
     .filter((e): e is AnchorElement => e.positioning === 'anchor' && !excluded.has(e.id) && !e.parentId && e.visible !== false)
 
@@ -207,7 +196,10 @@ export function computeLayout(
       elH = calcTextHeight(el, scale)
     }
 
-    let x: number, y: number, originX: number, originY: number
+    let x: number
+    let y: number
+    let originX: number
+    let originY: number
     switch (el.anchor) {
       case 'top-left': x = ox; y = oy; originX = 0; originY = 0; break
       case 'top-right': x = screenW - ox; y = oy; originX = 1; originY = 0; break
@@ -217,7 +209,6 @@ export function computeLayout(
     results.push({ id: el.id, x, y, displayWidth: elW, displayHeight: elH, originX, originY })
   }
 
-  // ── Pass 2: 자식 요소 (containers) ──
   const parentIds = new Set(results.map((r) => r.id))
   const childEls = allElements.filter((e) => e.parentId && parentIds.has(e.parentId) && e.visible !== false && !excluded.has(e.id))
 
@@ -244,10 +235,16 @@ export function computeLayout(
 
       const childrenClean = children.map((c) => ({ ...c, parentId: undefined }))
       const childResult = computeLayout(
-        childrenClean, innerScreenW, innerScreenH, getImageSize, getTextSize,
-        excludeIds, 'top',
+        childrenClean,
+        innerScreenW,
+        innerScreenH,
+        getImageSize,
+        getTextSize,
+        excludeIds,
+        'top',
         { top: 0, right: 0, bottom: 0, left: 0 },
-        allElements, innerDesignW,
+        allElements,
+        innerDesignW,
       )
 
       for (const cp of childResult.positions) {
